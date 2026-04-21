@@ -265,7 +265,17 @@ def parse_standings(raw: dict) -> pd.DataFrame:
 
     return pd.DataFrame(rows).sort_values("standing").reset_index(drop=True)
 
+# ============================================================
+# Availability (Google Sheet)
+# ============================================================
+def load_availability_sheet() -> pd.DataFrame:
+    """Henter Google Sheet (råt) og returnerer DataFrame"""
 
+    url = "https://docs.google.com/spreadsheets/d/1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=csv"
+
+    df = pd.read_csv(url, header=None)
+
+    return df
 # ============================================================
 # Pipeline
 # ============================================================

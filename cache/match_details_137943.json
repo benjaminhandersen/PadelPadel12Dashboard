@@ -1,0 +1,549 @@
+[
+  {
+    "Settings": {
+      "MatchType": 3,
+      "MatchesCount": 7,
+      "MatchOrder": 1
+    },
+    "Matches": {
+      "Matches": [
+        {
+          "Id": 6236025,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Simon Norlén",
+            "Player2Name": "Kasper Elsborg",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 731548,
+            "Player2Id": 731437,
+            "Player1Url": "/en/player/R000186396/simon-norlen",
+            "Player2Url": "/en/player/R000186385/kasper-elsborg",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Niclas Johansen",
+            "Player2Name": "Rune Zubeck",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 2310514,
+            "Player2Id": 1851563,
+            "Player1Url": "/en/player/R000306096/niclas-johansen",
+            "Player2Url": "/en/player/R000277649/rune-zubeck",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 2,
+              "SecondParticipantScore": 0,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 6,
+                  "SecondParticipantScore": 3,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 6,
+                  "SecondParticipantScore": 4,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": true,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": true,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236026,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Benjamin Andersen",
+            "Player2Name": "Rasmus H.",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1496750,
+            "Player2Id": 1521835,
+            "Player1Url": "/en/player/R000250833/benjamin-andersen",
+            "Player2Url": "/en/player/R000254081/rasmus-h",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Jens Christian Bonde Sørensen",
+            "Player2Name": "Anders Botten",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1341949,
+            "Player2Id": 2717619,
+            "Player1Url": "/en/player/R000238970/jens-christian-bonde-sorensen",
+            "Player2Url": "/en/player/R000326676/anders-botten",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 0,
+              "SecondParticipantScore": 2,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 5,
+                  "SecondParticipantScore": 7,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 3,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": false,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": false,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236027,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Rasmus Boisen Brydegaard",
+            "Player2Name": "Jesper Carlsen",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 456379,
+            "Player2Id": 1525096,
+            "Player1Url": "/en/player/R000156095/rasmus-boisen-brydegaard",
+            "Player2Url": "/en/player/R000254658/jesper-carlsen",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Tobias Randa",
+            "Player2Name": "Edvin Strandberg",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1336882,
+            "Player2Id": 294813,
+            "Player1Url": "/en/player/R000238579/tobias-randa",
+            "Player2Url": "/en/player/R000136566/edvin-strandberg",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 1,
+              "SecondParticipantScore": 2,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 4,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 7,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 8,
+                  "SecondParticipantScore": 10,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": false,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": false,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236028,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Kasper Elsborg",
+            "Player2Name": "Rasmus H.",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 731437,
+            "Player2Id": 1521835,
+            "Player1Url": "/en/player/R000186385/kasper-elsborg",
+            "Player2Url": "/en/player/R000254081/rasmus-h",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Rune Zubeck",
+            "Player2Name": "Jens Christian Bonde Sørensen",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1851563,
+            "Player2Id": 1341949,
+            "Player1Url": "/en/player/R000277649/rune-zubeck",
+            "Player2Url": "/en/player/R000238970/jens-christian-bonde-sorensen",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 0,
+              "SecondParticipantScore": 2,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 4,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 3,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": false,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": false,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236029,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Rasmus Boisen Brydegaard",
+            "Player2Name": "Simon Norlén",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 456379,
+            "Player2Id": 731548,
+            "Player1Url": "/en/player/R000156095/rasmus-boisen-brydegaard",
+            "Player2Url": "/en/player/R000186396/simon-norlen",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Tobias Randa",
+            "Player2Name": "Anders Botten",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1336882,
+            "Player2Id": 2717619,
+            "Player1Url": "/en/player/R000238579/tobias-randa",
+            "Player2Url": "/en/player/R000326676/anders-botten",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 1,
+              "SecondParticipantScore": 2,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 3,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 6,
+                  "SecondParticipantScore": 1,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 3,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": false,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": false,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": false,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236030,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Benjamin Andersen",
+            "Player2Name": "Jesper Carlsen",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 1496750,
+            "Player2Id": 1525096,
+            "Player1Url": "/en/player/R000250833/benjamin-andersen",
+            "Player2Url": "/en/player/R000254658/jesper-carlsen",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "Challenged": {
+            "Name": "Niclas Johansen",
+            "Player2Name": "Edvin Strandberg",
+            "CountryShort": "dk",
+            "Player2CountryShort": "dk",
+            "Player1Id": 2310514,
+            "Player2Id": 294813,
+            "Player1Url": "/en/player/R000306096/niclas-johansen",
+            "Player2Url": "/en/player/R000136566/edvin-strandberg",
+            "Player1RatingBegin": 19.32,
+            "Player2RatingBegin": 19.32,
+            "RatingPower": 19.32
+          },
+          "MatchResult": {
+            "Score": {
+              "FirstParticipantScore": 2,
+              "SecondParticipantScore": 0,
+              "LoserTiebreak": null,
+              "DetailedScoring": [
+                {
+                  "FirstParticipantScore": 7,
+                  "SecondParticipantScore": 6,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                },
+                {
+                  "FirstParticipantScore": 6,
+                  "SecondParticipantScore": 1,
+                  "LoserTiebreak": null,
+                  "DetailedScoring": null,
+                  "IsFirstParticipantWinner": true,
+                  "LabelClass": null
+                }
+              ],
+              "IsFirstParticipantWinner": true,
+              "LabelClass": null
+            },
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": null,
+            "IsFirstParticipantWinner": true,
+            "HasScore": true,
+            "HasCancellation": false,
+            "HasDetailedScore": true,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": true,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": null,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        },
+        {
+          "Id": 6236031,
+          "Date": "2026-04-10T20:00:00",
+          "Challenger": {
+            "Name": "Pending ",
+            "Player2Name": "Pending ",
+            "CountryShort": "rin",
+            "Player2CountryShort": "rin",
+            "Player1Id": 0,
+            "Player2Id": 0,
+            "Player1Url": "",
+            "Player2Url": "",
+            "Player1RatingBegin": null,
+            "Player2RatingBegin": null,
+            "RatingPower": 0
+          },
+          "Challenged": {
+            "Name": "Pending ",
+            "Player2Name": "Pending ",
+            "CountryShort": "rin",
+            "Player2CountryShort": "rin",
+            "Player1Id": 0,
+            "Player2Id": 0,
+            "Player1Url": "",
+            "Player2Url": "",
+            "Player1RatingBegin": null,
+            "Player2RatingBegin": null,
+            "RatingPower": 0
+          },
+          "MatchResult": {
+            "Score": null,
+            "TotalDurationInMinutes": null,
+            "CancellationStatus": "Not Played",
+            "IsFirstParticipantWinner": false,
+            "HasScore": false,
+            "HasCancellation": true,
+            "HasDetailedScore": false,
+            "IsPlayed": true
+          },
+          "State": 6,
+          "ShowDate": false,
+          "ShowThreeDots": false,
+          "ShowResult": true,
+          "AwaitingAcceptDate": false,
+          "AcceptDateButton": false,
+          "SetDateButton": false,
+          "EditChallengeButton": false,
+          "IsMatchScheduled": true,
+          "EnterResultsButton": false,
+          "Cancellation": 5,
+          "IsTeamMatchInPlay": false,
+          "RankingType": 3
+        }
+      ],
+      "EventId": 888,
+      "EventType": 3,
+      "CurrentPlayerId": 0,
+      "EventInitiatorId": 18840,
+      "IsEventFinished": false
+    }
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "FirstTeam": {
+    "Id": 2701885,
+    "Name": "PadelPadel 12 -",
+    "TeamUrl": "/en/team/homepage/2701885",
+    "CanLineupTeam": false,
+    "IsWinner": true,
+    "Players": []
+  },
+  "SecondTeam": {
+    "Id": 2701878,
+    "Name": "TTPK MIX",
+    "TeamUrl": "/en/team/homepage/2701878",
+    "CanLineupTeam": false,
+    "IsWinner": false,
+    "Players": []
+  },
+  "IsLicenseRequired": true,
+  "IsAdmin": false,
+  "HasRating": true
+}
