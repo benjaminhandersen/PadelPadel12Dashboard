@@ -99,20 +99,26 @@ def url_team_matches(team_id: int) -> str:
     return f"{API_BASE}/teamleague/GetTeamMatchesAsync?teamid={team_id}&language=en"
 
 
-def url_team_match_details(team_match_id: int) -> str:
-    # Skal bekræftes i DevTools
-    return f"{API_BASE}/teamleague/GetTeamMatchMatchesAsync?id={team_match_id}&language=en"
+def url_team_match_result_model(team_match_id: int) -> str:
+    return f"{API_BASE}/teamleague/GetTeamMatchResultModelAsync?matchId={team_match_id}"
 
 
 def url_team_match_lineup(team_match_id: int) -> str:
-    # Skal bekræftes i DevTools
-    return f"{API_BASE}/teamleague/GetTeamMatchLineupAsync?id={team_match_id}&language=en"
+    return f"{API_BASE}/teamleague/GetTeamsLineupsAsync?teamMatchId={team_match_id}&language=en"
+
+
+def url_team_match_summary(team_match_id: int) -> str:
+    return f"{API_BASE}/teamleague/TeamLeagueTeamMatchStandingsAsync?teamMatchId={team_match_id}&language=en"
+
+
+def url_team_match_details(team_match_id: int) -> str:
+    return f"{API_BASE}/teamleague/GetTeamLeagueTeamsMatchesAsync?teamMatchId={team_match_id}&language=en"
 
 
 def url_pool_standings(pool_id: int) -> str:
-    # Skal bekræftes i DevTools
-    return f"{API_BASE}/teamleague/GetPoolStandingsAsync?poolId={pool_id}&language=en"
-
+    raise NotImplementedError(
+        "Find Request URL i DevTools for standings-endpointet med ScoresViewModels."
+    )
 
 # ============================================================
 # Parsing
