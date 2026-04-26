@@ -17,11 +17,16 @@ from __future__ import annotations
 
 import io
 import json
+import logging
+import os
+import threading
 import time
 from pathlib import Path
 
 import pandas as pd
 import requests
+
+log = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -32,19 +37,29 @@ API_BASE = "https://api.rankedin.com/v1"
 OUR_TEAM_ID = 2701885
 OUR_POOL_ID = 11353
 
-AVAILABILITY_SHEET_XLSX_URL = (
+AVAILABILITY_SHEET_XLSX_URL = os.environ.get(
+    "AVAILABILITY_SHEET_URL",
     "https://docs.google.com/spreadsheets/d/"
-    "1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=xlsx"
+    "1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=xlsx",
 )
 
 CACHE = Path(__file__).parent / "cache"
 CACHE.mkdir(exist_ok=True)
 
-SESSION = requests.Session()
-SESSION.headers.update({
+_local = threading.local()
+
+_DEFAULT_HEADERS = {
     "User-Agent": "PadelDashboard/1.0 (kontakt@dinklub.dk)",
     "Accept": "application/json",
-})
+}
+
+
+def _get_session() -> requests.Session:
+    if not hasattr(_local, "session"):
+        s = requests.Session()
+        s.headers.update(_DEFAULT_HEADERS)
+        _local.session = s
+    return _local.session
 
 
 # ============================================================
@@ -62,16 +77,8 @@ def fetch(url: str, cache_key: str, refresh: bool = False) -> dict | list:
         except json.JSONDecodeError as e:
             raise ValueError(f"Ugyldig JSON i cache-filen {cache_file}: {e}") from e
 
-    response = SESSION.get(url, timeout=15)
-
-    print("\n--- DEBUG FETCH ---")
-    print("URL:", url)
-    print("Status:", response.status_code)
-    print("Content-Type:", response.headers.get("Content-Type"))
-    print("Første 500 tegn af svar:")
-    print(response.text[:500])
-    print("--- END DEBUG ---\n")
-
+    response = _get_session().get(url, timeout=15)
+    log.debug("GET %s → %s", url, response.status_code)
     response.raise_for_status()
 
     text = response.text.strip()
@@ -113,8 +120,11 @@ def url_team_match_details(team_match_id: int) -> str:
 
 
 def url_pool_standings(pool_id: int) -> str:
+    # TODO: find the correct endpoint URL via browser DevTools (look for a
+    # response that contains "ScoresViewModels"), then return it here.
     raise NotImplementedError(
-        "Find Request URL i DevTools for standings-endpointet med ScoresViewModels."
+        "Standings-endpoint ikke implementeret endnu. "
+        "Find URL i DevTools og opdater denne funktion."
     )
 
 
@@ -277,7 +287,7 @@ def _clean_cell(value) -> str:
 
 
 def _load_availability_workbook() -> pd.DataFrame:
-    response = requests.get(AVAILABILITY_SHEET_XLSX_URL, timeout=20)
+    response = _get_session().get(AVAILABILITY_SHEET_XLSX_URL, timeout=20)
     response.raise_for_status()
     return pd.read_excel(io.BytesIO(response.content), sheet_name=0, header=None)
 
@@ -294,6 +304,12 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
     # Spillere ligger ca. på rækker 10-19 (0-baseret i pandas efter read_excel)
     player_start = 10
     player_end = 19
+
+    if df.shape[0] <= player_end or df.shape[1] < 4:
+        raise ValueError(
+            f"Availability-arket har uventet størrelse {df.shape}. "
+            "Tjek om arkets layout har ændret sig (forventede mindst 20 rækker og 4 kolonner)."
+        )
 
     players = []
     for r in range(player_start, player_end + 1):
@@ -343,7 +359,7 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
                     "Side": p["Side"],
                     "Kan spille": "Ja" if can_play else "Nej",
                     "PP-12": "x" if can_home else "",
-                    away_val if away_val else "Modstander": "x" if can_away else "",
+                    "Ude": "x" if can_away else "",
                 })
 
             match_df = pd.DataFrame(rows)
