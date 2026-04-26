@@ -5,7 +5,7 @@ Padel dashboard — Rankedin data pipeline
 Henter holdkampe, parser individuelle doubles-matches og beregner statistik.
 
 Offentlige funktioner:
-  - build_dataset()    henter + parser alt (team_matches, individual, lineup, standings)
+  - build_dataset()    henter + parser alt
   - stat_win_loss()    win/loss pr. spiller
   - stat_best_pairs()  bedste makkerpar
   - stat_per_match()   stats pr. holdkamp
@@ -15,6 +15,7 @@ Kør direkte for at printe alt:
 """
 from __future__ import annotations
 
+import io
 import json
 import time
 from pathlib import Path
@@ -26,11 +27,15 @@ import requests
 # ============================================================
 # Konfiguration
 # ============================================================
-BASE = "https://rankedin.com"
 API_BASE = "https://api.rankedin.com/v1"
 
 OUR_TEAM_ID = 2701885
 OUR_POOL_ID = 11353
+
+AVAILABILITY_SHEET_XLSX_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=xlsx"
+)
 
 CACHE = Path(__file__).parent / "cache"
 CACHE.mkdir(exist_ok=True)
@@ -99,16 +104,8 @@ def url_team_matches(team_id: int) -> str:
     return f"{API_BASE}/teamleague/GetTeamMatchesAsync?teamid={team_id}&language=en"
 
 
-def url_team_match_result_model(team_match_id: int) -> str:
-    return f"{API_BASE}/teamleague/GetTeamMatchResultModelAsync?matchId={team_match_id}"
-
-
 def url_team_match_lineup(team_match_id: int) -> str:
     return f"{API_BASE}/teamleague/GetTeamsLineupsAsync?teamMatchId={team_match_id}&language=en"
-
-
-def url_team_match_summary(team_match_id: int) -> str:
-    return f"{API_BASE}/teamleague/TeamLeagueTeamMatchStandingsAsync?teamMatchId={team_match_id}&language=en"
 
 
 def url_team_match_details(team_match_id: int) -> str:
@@ -120,8 +117,9 @@ def url_pool_standings(pool_id: int) -> str:
         "Find Request URL i DevTools for standings-endpointet med ScoresViewModels."
     )
 
+
 # ============================================================
-# Parsing
+# Rankedin parsing
 # ============================================================
 def parse_team_matches(raw: dict, our_team_id: int) -> pd.DataFrame:
     rows = []
@@ -265,17 +263,122 @@ def parse_standings(raw: dict) -> pd.DataFrame:
 
     return pd.DataFrame(rows).sort_values("standing").reset_index(drop=True)
 
+
 # ============================================================
-# Availability (Google Sheet)
+# Availability parsing
 # ============================================================
-def load_availability_sheet() -> pd.DataFrame:
-    """Henter Google Sheet (råt) og returnerer DataFrame"""
+def _clean_cell(value) -> str:
+    if pd.isna(value):
+        return ""
+    text = str(value).strip()
+    if text == "nan":
+        return ""
+    return text
 
-    url = "https://docs.google.com/spreadsheets/d/1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=csv"
 
-    df = pd.read_csv(url, header=None)
+def _load_availability_workbook() -> pd.DataFrame:
+    response = requests.get(AVAILABILITY_SHEET_XLSX_URL, timeout=20)
+    response.raise_for_status()
+    return pd.read_excel(io.BytesIO(response.content), sheet_name=0, header=None)
 
-    return df
+
+def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
+    """
+    Parser den øverste del af arket til:
+    1) player_overview: spillere som rækker
+    2) matches: liste af kampe med hvem der kan spille
+    """
+    df = df_raw.copy()
+
+    # Rækker/kolonner er baseret på det konkrete ark-layout vist i billedet
+    # Spillere ligger ca. på rækker 10-19 (0-baseret i pandas efter read_excel)
+    player_start = 10
+    player_end = 19
+
+    players = []
+    for r in range(player_start, player_end + 1):
+        name = _clean_cell(df.iloc[r, 0])
+        side = _clean_cell(df.iloc[r, 1])
+        wanted = _clean_cell(df.iloc[r, 2])
+        played = _clean_cell(df.iloc[r, 3])
+
+        if not name:
+            continue
+
+        players.append({
+            "Spiller": name,
+            "Side": side,
+            "Ønsket": wanted,
+            "Kampe": played,
+            "_row_idx": r,
+        })
+
+    player_df = pd.DataFrame(players)
+
+    matches = []
+    col = 4
+    max_col = df.shape[1]
+
+    while col < max_col:
+        date_val = _clean_cell(df.iloc[7, col])
+        time_val = _clean_cell(df.iloc[8, col])
+        home_val = _clean_cell(df.iloc[9, col])
+        away_val = _clean_cell(df.iloc[9, col + 1]) if col + 1 < max_col else ""
+
+        if date_val or time_val or home_val or away_val:
+            rows = []
+            available_count = 0
+
+            for p in players:
+                r = p["_row_idx"]
+                can_home = _clean_cell(df.iloc[r, col]).lower() == "x"
+                can_away = _clean_cell(df.iloc[r, col + 1]).lower() == "x" if col + 1 < max_col else False
+                can_play = can_home or can_away
+
+                if can_play:
+                    available_count += 1
+
+                rows.append({
+                    "Spiller": p["Spiller"],
+                    "Side": p["Side"],
+                    "Kan spille": "Ja" if can_play else "Nej",
+                    "PP-12": "x" if can_home else "",
+                    away_val if away_val else "Modstander": "x" if can_away else "",
+                })
+
+            match_df = pd.DataFrame(rows)
+
+            title_parts = [part for part in [date_val, time_val, home_val, away_val] if part]
+            title = " · ".join(title_parts) if title_parts else f"Kamp kolonne {col}"
+
+            matches.append({
+                "title": title,
+                "date": date_val,
+                "time": time_val,
+                "home": home_val,
+                "away": away_val,
+                "available_count": available_count,
+                "table": match_df,
+            })
+
+        col += 2
+
+    if not player_df.empty:
+        player_df = player_df.drop(columns=["_row_idx"])
+
+    return player_df, matches
+
+
+def load_availability_data() -> dict:
+    raw = _load_availability_workbook()
+    players, matches = parse_availability_table(raw)
+    return {
+        "raw": raw,
+        "players": players,
+        "matches": matches,
+    }
+
+
 # ============================================================
 # Pipeline
 # ============================================================
@@ -343,11 +446,18 @@ def build_dataset(
         print(f"⚠ Kunne ikke hente stilling for pulje {pool_id}: {e}")
         standings = pd.DataFrame()
 
+    try:
+        availability = load_availability_data()
+    except Exception as e:
+        print(f"⚠ Kunne ikke hente availability: {e}")
+        availability = {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": []}
+
     return {
         "team_matches": team_matches,
         "individual": individual,
         "lineup": latest_lineup,
         "standings": standings,
+        "availability": availability,
     }
 
 

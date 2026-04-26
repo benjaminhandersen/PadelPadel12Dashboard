@@ -31,7 +31,7 @@ st.set_page_config(
 # ============================================================
 # Data (cached, så Streamlit ikke kalder Rankedin ved hver re-render)
 # ============================================================
-@st.cache_data(ttl=60 * 15)   # genopfrisk hver 15 min
+@st.cache_data(ttl=60 * 15)
 def load_data(team_id: int, pool_id: int, refresh: bool = False):
     return build_dataset(our_team_id=team_id, pool_id=pool_id, refresh=refresh)
 
@@ -68,9 +68,10 @@ with st.spinner("Henter data fra Rankedin..."):
         st.stop()
 
 team_matches = data["team_matches"]
-individual   = data["individual"]
-lineup       = data["lineup"]
-standings    = data["standings"]
+individual = data["individual"]
+lineup = data["lineup"]
+standings = data["standings"]
+availability = data.get("availability", {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": []})
 
 
 # ============================================================
@@ -92,7 +93,7 @@ if not our_row.empty:
     col4.metric("Games-diff", f"{s['games_diff']:+d}")
 else:
     played = int(team_matches["played"].sum())
-    won    = int(team_matches["won"].fillna(False).sum())
+    won = int(team_matches["won"].fillna(False).sum())
     col1.metric("Placering", "—")
     col2.metric("Kampe", f"{played} / {len(team_matches)}")
     col3.metric("Vundet / tabt", f"{won} / {played - won}")
@@ -102,8 +103,8 @@ else:
 # ============================================================
 # Tabs
 # ============================================================
-tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming = st.tabs(
-    ["Stilling", "Spillere", "Makkerpar", "Kampe", "Kommende"]
+tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availability = st.tabs(
+    ["Stilling", "Spillere", "Makkerpar", "Kampe", "Kommende", "Tilgængelighed"]
 )
 
 
@@ -111,23 +112,25 @@ tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming = st.tabs(
 with tab_standings:
     st.subheader("Puljestilling")
     if standings.empty:
-        st.info("Stillings-endpointet kunne ikke hentes. "
-                "Bekræft URL'en i `padel_pipeline.py`.")
+        st.info(
+            "Stillings-endpointet kunne ikke hentes endnu. "
+            "Dashboardet virker stadig uden denne del."
+        )
     else:
         def highlight_us(row):
             return ["background-color: rgba(99, 153, 255, 0.15);"] * len(row) \
                 if row["participant_id"] == team_id else [""] * len(row)
 
         show = standings.rename(columns={
-            "standing":     "#",
-            "team_name":    "Hold",
+            "standing": "#",
+            "team_name": "Hold",
             "match_points": "Pts",
-            "played":       "Sp",
-            "wins":         "V",
-            "draws":        "U",
-            "losses":       "T",
-            "sets_diff":    "Sæt±",
-            "games_diff":   "Games±",
+            "played": "Sp",
+            "wins": "V",
+            "draws": "U",
+            "losses": "T",
+            "sets_diff": "Sæt±",
+            "games_diff": "Games±",
         })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
 
         st.dataframe(
@@ -148,31 +151,33 @@ with tab_players:
         st.info("Ingen individuelle matches i data endnu.")
     else:
         show = wl.rename(columns={
-            "name":        "Spiller",
-            "played":      "Sp",
-            "wins":        "V",
-            "losses":      "T",
-            "win_pct":     "Win %",
+            "name": "Spiller",
+            "played": "Sp",
+            "wins": "V",
+            "losses": "T",
+            "win_pct": "Win %",
             "ranking_pts": "Ranking pts",
-            "role":        "Rolle",
+            "role": "Rolle",
         })
         cols = ["Spiller", "Sp", "V", "T", "Win %"]
-        if "Ranking pts" in show.columns: cols += ["Ranking pts"]
-        if "Rolle" in show.columns:       cols += ["Rolle"]
+        if "Ranking pts" in show.columns:
+            cols += ["Ranking pts"]
+        if "Rolle" in show.columns:
+            cols += ["Rolle"]
+
         st.dataframe(show[cols], use_container_width=True, hide_index=True)
 
-        # Quick bar chart
         chart_df = wl.set_index("name")[["wins", "losses"]]
         st.bar_chart(chart_df, horizontal=True, height=300)
 
     if lineup is not None and not lineup.empty:
         st.subheader("Trup (ikke nødvendigvis spillet endnu)")
         roster = lineup.rename(columns={
-            "full_name":    "Navn",
-            "ranking_pts":  "Ranking pts",
+            "full_name": "Navn",
+            "ranking_pts": "Ranking pts",
             "rating_begin": "Rating",
-            "has_license":  "Licens",
-            "role":         "Rolle",
+            "has_license": "Licens",
+            "role": "Rolle",
         })[["Navn", "Ranking pts", "Rating", "Licens", "Rolle"]]
         st.dataframe(roster, use_container_width=True, hide_index=True)
 
@@ -189,10 +194,10 @@ with tab_pairs:
     else:
         show = pairs.rename(columns={
             "pair_name": "Par",
-            "played":    "Sp",
-            "wins":      "V",
-            "losses":    "T",
-            "win_pct":   "Win %",
+            "played": "Sp",
+            "wins": "V",
+            "losses": "T",
+            "win_pct": "Win %",
         })[["Par", "Sp", "V", "T", "Win %"]]
         st.dataframe(show, use_container_width=True, hide_index=True)
 
@@ -205,7 +210,6 @@ with tab_matches:
     if played.empty:
         st.info("Ingen spillede kampe i data.")
     else:
-        # Kampliste til valg
         played["label"] = played.apply(
             lambda r: f"R{r['round']} · {r['datetime'].strftime('%d/%m')} · "
                       f"{r['opponent']} ({'hjemme' if r['venue']=='home' else 'ude'})",
@@ -235,9 +239,9 @@ with tab_matches:
             for _, r in sub.iterrows():
                 rows.append({
                     "Udfald": "✅" if r["won"] else "❌",
-                    "Os":     fmt_pair(r, "our"),
+                    "Os": fmt_pair(r, "our"),
                     "Modstandere": fmt_pair(r, "opp"),
-                    "Sæt":    r["sets_str"],
+                    "Sæt": r["sets_str"],
                     "Games±": f"{r['games_diff']:+d}",
                 })
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
@@ -260,6 +264,51 @@ with tab_upcoming:
                 venue = "Hjemme" if r["venue"] == "home" else "Ude"
                 c3.markdown(f"{r['datetime'].strftime('%a %d. %b %Y, %H:%M')}  \n"
                             f"_{venue}_")
+
+
+# ---------- Tilgængelighed ----------
+with tab_availability:
+    st.subheader("Tilgængelighed pr. kamp")
+
+    matches = availability.get("matches", [])
+    players_df = availability.get("players", pd.DataFrame())
+
+    if not matches:
+        st.info("Kunne ikke hente eller parse tilgængelighedsarket.")
+    else:
+        campaign_titles = [m["title"] for m in matches]
+        selected_title = st.selectbox("Vælg kamp", campaign_titles)
+
+        selected_match = next(m for m in matches if m["title"] == selected_title)
+        match_table = selected_match["table"].copy()
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Dato", selected_match["date"] or "—")
+        c2.metric("Tid", selected_match["time"] or "—")
+        c3.metric("Modstander", selected_match["away"] or "—")
+        c4.metric("Antal der kan", selected_match["available_count"])
+
+        only_available = st.checkbox("Vis kun spillere der kan spille", value=True)
+
+        if only_available:
+            match_table = match_table[match_table["Kan spille"] == "Ja"].copy()
+
+        def highlight_yes(val):
+            if val == "Ja":
+                return "background-color: rgba(80, 200, 120, 0.20); font-weight: 600;"
+            return ""
+
+        st.dataframe(
+            match_table.style.map(highlight_yes, subset=["Kan spille"]),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.divider()
+        st.subheader("Samlet spilleroversigt")
+
+        if not players_df.empty:
+            st.dataframe(players_df, use_container_width=True, hide_index=True)
 
 
 # ============================================================
