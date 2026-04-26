@@ -125,12 +125,13 @@ def url_team_match_details(team_match_id: int) -> str:
     return f"{API_BASE}/teamleague/GetTeamLeagueTeamsMatchesAsync?teamMatchId={team_match_id}&language=en"
 
 
-# POOL_STANDINGS_URL kan sættes som miljøvariabel for at undgå at ændre koden.
-# Find URL'en via DevTools: åbn rankedin.com → din puljeside → Network-fanen →
-# filtrer på "api.rankedin.com" → find kaldet der returnerer "ScoresViewModels".
+# Overstyr med miljøvariabel POOL_STANDINGS_URL hvis URL'en ændrer sig.
+_DEFAULT_STANDINGS_TMPL = "teamleague/GetTeamStandingsAsync?poolId={pool_id}&language=en"
+
 POOL_STANDINGS_URL = os.environ.get("POOL_STANDINGS_URL", "")
 
 _STANDINGS_CANDIDATES = [
+    _DEFAULT_STANDINGS_TMPL,
     "teamleague/GetTeamLeaguePoolStandingsAsync?poolId={pool_id}&language=en",
     "teamleague/GetPoolStandingsAsync?poolId={pool_id}&language=en",
     "teamleague/GetTeamLeagueStandingsAsync?poolId={pool_id}&language=en",
@@ -140,13 +141,7 @@ _STANDINGS_CANDIDATES = [
 def url_pool_standings(pool_id: int) -> str:
     if POOL_STANDINGS_URL:
         return POOL_STANDINGS_URL
-    # Ingen URL konfigureret — ingen standings tilgængelig.
-    raise NotImplementedError(
-        "Standings-URL ikke fundet endnu.\n"
-        "Sæt miljøvariablen POOL_STANDINGS_URL til den fulde API-URL, du finder i\n"
-        "browser DevTools mens du kigger på puljestillingen på rankedin.com.\n"
-        "Kig efter et kald til api.rankedin.com der returnerer 'ScoresViewModels'."
-    )
+    return f"{API_BASE}/{_DEFAULT_STANDINGS_TMPL.format(pool_id=pool_id)}"
 
 
 def _probe_standings_url(pool_id: int) -> str | None:
@@ -504,16 +499,6 @@ def build_dataset(
             refresh=refresh,
         )
         standings = parse_standings(raw_st)
-    except NotImplementedError:
-        standings_url = _probe_standings_url(pool_id)
-        if standings_url:
-            try:
-                raw_st = fetch(standings_url, cache_key=f"standings_{pool_id}", refresh=refresh)
-                standings = parse_standings(raw_st)
-            except Exception as e:
-                log.warning("Automatisk standings-probe fejlede: %s", e)
-        else:
-            log.info("Standings-URL ikke konfigureret — springer over.")
     except Exception as e:
         log.warning("Kunne ikke hente stilling for pulje %s: %s", pool_id, e)
 
