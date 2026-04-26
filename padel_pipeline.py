@@ -26,6 +26,12 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv er valgfrit
+
 log = logging.getLogger(__name__)
 
 
@@ -119,13 +125,52 @@ def url_team_match_details(team_match_id: int) -> str:
     return f"{API_BASE}/teamleague/GetTeamLeagueTeamsMatchesAsync?teamMatchId={team_match_id}&language=en"
 
 
+# POOL_STANDINGS_URL kan sættes som miljøvariabel for at undgå at ændre koden.
+# Find URL'en via DevTools: åbn rankedin.com → din puljeside → Network-fanen →
+# filtrer på "api.rankedin.com" → find kaldet der returnerer "ScoresViewModels".
+POOL_STANDINGS_URL = os.environ.get("POOL_STANDINGS_URL", "")
+
+_STANDINGS_CANDIDATES = [
+    "teamleague/GetTeamLeaguePoolStandingsAsync?poolId={pool_id}&language=en",
+    "teamleague/GetPoolStandingsAsync?poolId={pool_id}&language=en",
+    "teamleague/GetTeamLeagueStandingsAsync?poolId={pool_id}&language=en",
+]
+
+
 def url_pool_standings(pool_id: int) -> str:
-    # TODO: find the correct endpoint URL via browser DevTools (look for a
-    # response that contains "ScoresViewModels"), then return it here.
+    if POOL_STANDINGS_URL:
+        return POOL_STANDINGS_URL
+    # Ingen URL konfigureret — ingen standings tilgængelig.
     raise NotImplementedError(
-        "Standings-endpoint ikke implementeret endnu. "
-        "Find URL i DevTools og opdater denne funktion."
+        "Standings-URL ikke fundet endnu.\n"
+        "Sæt miljøvariablen POOL_STANDINGS_URL til den fulde API-URL, du finder i\n"
+        "browser DevTools mens du kigger på puljestillingen på rankedin.com.\n"
+        "Kig efter et kald til api.rankedin.com der returnerer 'ScoresViewModels'."
     )
+
+
+def _probe_standings_url(pool_id: int) -> str | None:
+    """
+    Prøver kendte URL-kandidater i rækkefølge og returnerer den første
+    der svarer med gyldig JSON indeholdende 'ScoresViewModels'.
+    Gemmer den fundne URL i POOL_STANDINGS_URL så den bruges fremover.
+    """
+    global POOL_STANDINGS_URL  # noqa: PLW0603
+
+    for tmpl in _STANDINGS_CANDIDATES:
+        url = f"{API_BASE}/{tmpl.format(pool_id=pool_id)}"
+        try:
+            resp = _get_session().get(url, timeout=10)
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            if "ScoresViewModels" in data:
+                log.info("Standings-URL fundet automatisk: %s", url)
+                POOL_STANDINGS_URL = url
+                return url
+        except Exception:
+            continue
+    return None
 
 
 # ============================================================
@@ -437,7 +482,7 @@ def build_dataset(
                 )
             )
         except Exception as e:
-            print(f"⚠ Kunne ikke hente detaljer for kamp {tm_id}: {e}")
+            log.warning("Kunne ikke hente detaljer for kamp %s: %s", tm_id, e)
 
         try:
             raw_lu = fetch(
@@ -447,10 +492,11 @@ def build_dataset(
             )
             latest_lineup = parse_lineup(raw_lu, our_team_id)
         except Exception as e:
-            print(f"⚠ Kunne ikke hente lineup for kamp {tm_id}: {e}")
+            log.warning("Kunne ikke hente lineup for kamp %s: %s", tm_id, e)
 
     individual = pd.DataFrame(all_ind)
 
+    standings = pd.DataFrame()
     try:
         raw_st = fetch(
             url_pool_standings(pool_id),
@@ -458,14 +504,23 @@ def build_dataset(
             refresh=refresh,
         )
         standings = parse_standings(raw_st)
+    except NotImplementedError:
+        standings_url = _probe_standings_url(pool_id)
+        if standings_url:
+            try:
+                raw_st = fetch(standings_url, cache_key=f"standings_{pool_id}", refresh=refresh)
+                standings = parse_standings(raw_st)
+            except Exception as e:
+                log.warning("Automatisk standings-probe fejlede: %s", e)
+        else:
+            log.info("Standings-URL ikke konfigureret — springer over.")
     except Exception as e:
-        print(f"⚠ Kunne ikke hente stilling for pulje {pool_id}: {e}")
-        standings = pd.DataFrame()
+        log.warning("Kunne ikke hente stilling for pulje %s: %s", pool_id, e)
 
     try:
         availability = load_availability_data()
     except Exception as e:
-        print(f"⚠ Kunne ikke hente availability: {e}")
+        log.warning("Kunne ikke hente availability: %s", e)
         availability = {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": []}
 
     return {

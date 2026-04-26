@@ -112,10 +112,32 @@ tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availabili
 with tab_standings:
     st.subheader("Puljestilling")
     if standings.empty:
-        st.info(
-            "Stillings-endpointet kunne ikke hentes endnu. "
-            "Dashboardet virker stadig uden denne del."
-        )
+        st.info("Puljestillingen kunne ikke hentes — standings-URL'en er endnu ikke konfigureret.")
+        with st.expander("Sådan finder du URL'en (DevTools-guide)"):
+            st.markdown(
+                """
+**Trin for trin:**
+
+1. Åbn [rankedin.com](https://www.rankedin.com) og log ind.
+2. Navigér til din pulje-side (den side der viser puljestillingen).
+3. Åbn browserens DevTools: `F12` → fanen **Network**.
+4. Genindlæs siden (`F5`).
+5. Filtrer på `api.rankedin.com` i søgefeltet øverst i Network-fanen.
+6. Find det kald hvis svar indeholder nøglen `ScoresViewModels` (klik på kaldet og se **Response**-fanen).
+7. Kopiér den fulde URL fra **Headers**-fanen (feltet **Request URL**).
+8. Sæt URL'en som miljøvariabel inden du starter dashboardet:
+
+```bash
+export POOL_STANDINGS_URL="https://api.rankedin.com/v1/teamleague/..."
+streamlit run dashboard.py
+```
+
+Eller tilføj den til en `.env`-fil:
+```
+POOL_STANDINGS_URL=https://api.rankedin.com/v1/teamleague/...
+```
+                """
+            )
     else:
         def highlight_us(row):
             return ["background-color: rgba(99, 153, 255, 0.15);"] * len(row) \
