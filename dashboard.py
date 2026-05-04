@@ -3,7 +3,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match, stat_win_loss
+from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match
+from player_stats import player_set_stats, season_coverage
 from app_config import load_config, get_active_season, set_active_season, upsert_season
 
 st.set_page_config(page_title="Padel Dashboard", page_icon="🎾", layout="wide")
@@ -30,20 +31,12 @@ def normalize_name(value: str) -> str:
 
 
 def resolve_team_row(standings: pd.DataFrame, team_matches: pd.DataFrame, team_id: int, active: dict) -> pd.DataFrame:
-    """Find our row in standings even when Rankedin participant_id differs from team_id."""
     if standings.empty:
         return pd.DataFrame()
-
-    # 1) Direct ID match when Rankedin uses the same id in both endpoints.
     row = standings[standings["participant_id"] == team_id]
     if not row.empty:
         return row
-
-    # 2) Configured display/team name, e.g. PadelPadel12.
-    configured_names = [
-        active.get("team_name", ""),
-        active.get("label", ""),
-    ]
+    configured_names = [active.get("team_name", ""), active.get("label", "")]
     for name in configured_names:
         needle = normalize_name(name)
         if not needle:
@@ -51,20 +44,14 @@ def resolve_team_row(standings: pd.DataFrame, team_matches: pd.DataFrame, team_i
         row = standings[standings["team_name"].apply(lambda x: needle in normalize_name(x) or normalize_name(x) in needle)]
         if not row.empty:
             return row
-
-    # 3) Infer from standings names that are NOT opponents in our match list.
-    # team_matches only contains opponents, while standings contains every team including us.
     if not team_matches.empty and "opponent" in team_matches.columns:
         opponent_names = {normalize_name(x) for x in team_matches["opponent"].dropna().unique()}
         candidates = standings[~standings["team_name"].apply(lambda x: normalize_name(x) in opponent_names)]
         if len(candidates) == 1:
             return candidates
-
-    # 4) Best-effort fallback: if config name is absent but team url/team id is known, prefer a team containing 'padelpadel'.
     row = standings[standings["team_name"].str.contains("PadelPadel", case=False, na=False)]
     if not row.empty:
         return row
-
     return pd.DataFrame()
 
 
@@ -111,7 +98,6 @@ def player_contribution_table(sub: pd.DataFrame) -> pd.DataFrame:
     })[["Spiller", "Kampe", "V", "T", "Win %", "Games vundet", "Games tabt", "Games±"]]
 
 
-# ---------- Multi-season sidebar ----------
 cfg = load_config()
 active_key, active = get_active_season(cfg)
 seasons = cfg.get("seasons", {})
@@ -204,15 +190,8 @@ with tab_standings:
         st.info("Puljestillingen kunne ikke hentes.")
     else:
         show = standings.rename(columns={
-            "standing": "#",
-            "team_name": "Hold",
-            "match_points": "Pts",
-            "played": "Sp",
-            "wins": "V",
-            "draws": "U",
-            "losses": "T",
-            "sets_diff": "Sæt±",
-            "games_diff": "Games±",
+            "standing": "#", "team_name": "Hold", "match_points": "Pts", "played": "Sp",
+            "wins": "V", "draws": "U", "losses": "T", "sets_diff": "Sæt±", "games_diff": "Games±",
         })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
 
         def highlight_us(row):
@@ -225,32 +204,34 @@ with tab_standings:
         )
 
 with tab_players:
-    st.subheader("Win / loss pr. spiller")
-    wl = stat_win_loss(individual, lineup)
-    if wl.empty:
+    st.subheader("Spillerstatistik")
+    st.caption("Primært baseret på individuelle kampe: hvor mange doublekampe hver spiller har spillet, vundet og tabt. Sæt og games vises som ekstra detaljer.")
+
+    player_stats = player_set_stats(individual)
+    if player_stats.empty:
         st.info("Ingen individuelle matches i data endnu.")
     else:
-        show = wl.rename(columns={
-            "name": "Spiller",
-            "played": "Sp",
-            "wins": "V",
-            "losses": "T",
-            "win_pct": "Win %",
-            "ranking_pts": "Ranking pts",
-            "role": "Rolle",
-        })
-        cols = [c for c in ["Spiller", "Sp", "V", "T", "Win %", "Ranking pts", "Rolle"] if c in show.columns]
-        st.dataframe(show[cols], use_container_width=True, hide_index=True)
-        st.bar_chart(wl.set_index("name")[["wins", "losses"]], horizontal=True, height=300)
+        main_cols = ["Spiller", "Ind. kampe", "Match V", "Match T", "Match %"]
+        detail_cols = ["Sæt vundet", "Sæt tabt", "Sæt±", "Sæt %", "Games vundet", "Games tabt", "Games±"]
+        st.dataframe(player_stats[main_cols + detail_cols], use_container_width=True, hide_index=True)
+        chart_df = player_stats.set_index("Spiller")[["Match V", "Match T"]]
+        st.bar_chart(chart_df, horizontal=True, height=300)
+
+    with st.expander("Datakontrol: er alle 6 individuelle kampe pr. holdkamp hentet?"):
+        coverage = season_coverage(team_matches, individual)
+        if coverage.empty:
+            st.info("Ingen spillede holdkampe at kontrollere.")
+        else:
+            st.dataframe(coverage, use_container_width=True, hide_index=True)
+            incomplete = coverage[~coverage["Komplet"]]
+            if not incomplete.empty:
+                st.warning("Nogle holdkampe har færre end 6 individuelle kampe i data. Så vil spillerstatistikken også mangle kampe.")
 
     if lineup is not None and not lineup.empty:
         st.subheader("Trup")
         roster = lineup.rename(columns={
-            "full_name": "Navn",
-            "ranking_pts": "Ranking pts",
-            "rating_begin": "Rating",
-            "has_license": "Licens",
-            "role": "Rolle",
+            "full_name": "Navn", "ranking_pts": "Ranking pts", "rating_begin": "Rating",
+            "has_license": "Licens", "role": "Rolle",
         })[["Navn", "Ranking pts", "Rating", "Licens", "Rolle"]]
         st.dataframe(roster, use_container_width=True, hide_index=True)
 
@@ -261,13 +242,7 @@ with tab_pairs:
     if pairs.empty:
         st.info(f"Ingen makkerpar med mindst {min_matches} kampe endnu.")
     else:
-        show = pairs.rename(columns={
-            "pair_name": "Par",
-            "played": "Sp",
-            "wins": "V",
-            "losses": "T",
-            "win_pct": "Win %",
-        })[["Par", "Sp", "V", "T", "Win %"]]
+        show = pairs.rename(columns={"pair_name": "Par", "played": "Sp", "wins": "V", "losses": "T", "win_pct": "Win %"})[["Par", "Sp", "V", "T", "Win %"]]
         st.dataframe(show, use_container_width=True, hide_index=True)
 
 with tab_matches:
@@ -277,17 +252,10 @@ with tab_matches:
         st.info("Ingen spillede kampe i data.")
     else:
         overview = played.rename(columns={
-            "round": "Runde",
-            "datetime": "Dato",
-            "opponent": "Modstander",
-            "venue": "H/U",
-            "our_score": "Os",
-            "their_score": "Dem",
-            "doubles_won": "Ind. vundet",
-            "doubles_played": "Ind. spillet",
-            "total_games_won": "Games vundet",
-            "total_games_lost": "Games tabt",
-            "games_diff": "Games±",
+            "round": "Runde", "datetime": "Dato", "opponent": "Modstander", "venue": "H/U",
+            "our_score": "Os", "their_score": "Dem", "doubles_won": "Ind. vundet",
+            "doubles_played": "Ind. spillet", "total_games_won": "Games vundet",
+            "total_games_lost": "Games tabt", "games_diff": "Games±",
         }).copy()
         overview["Dato"] = overview["Dato"].dt.strftime("%d/%m/%Y")
         overview["H/U"] = overview["H/U"].map({"home": "Hjemme", "away": "Ude"}).fillna(overview["H/U"])
