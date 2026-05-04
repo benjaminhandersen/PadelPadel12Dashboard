@@ -22,8 +22,40 @@ with st.spinner("Henter data..."):
 individual = data["individual"]
 lineup = data["lineup"]
 team_matches = data["team_matches"]
+standings = data["standings"]
 
 players = all_known_players(individual, lineup)
+
+# ---------- Puljestilling ----------
+with st.expander("📊 Puljestilling", expanded=True):
+    if standings.empty:
+        st.info("Puljestillingen kunne ikke hentes endnu.")
+    else:
+        show = standings.rename(columns={
+            "standing": "#",
+            "team_name": "Hold",
+            "match_points": "Pts",
+            "played": "Sp",
+            "wins": "V",
+            "draws": "U",
+            "losses": "T",
+            "sets_diff": "Sæt±",
+            "games_diff": "Games±",
+        })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
+
+        def highlight_us(row):
+            if row["participant_id"] == OUR_TEAM_ID:
+                return ["background-color: rgba(99, 153, 255, 0.18); font-weight: 600;"] * len(row)
+            return [""] * len(row)
+
+        st.dataframe(
+            show.style
+                .apply(highlight_us, axis=1)
+                .format({"Sæt±": "{:+d}", "Games±": "{:+d}"})
+                .hide(subset=["participant_id"], axis=1),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 if players.empty:
     st.info("Ingen spillere fundet endnu")
@@ -32,7 +64,7 @@ if players.empty:
 names = players["name"].tolist()
 name_to_id = dict(zip(players["name"], players["player_id"]))
 
-upcoming = team_matches[~team_matches["played"]]
+upcoming = team_matches[~team_matches["played"]].copy()
 if not upcoming.empty:
     upcoming["label"] = upcoming.apply(
         lambda r: f"R{r['round']} · {r['datetime'].strftime('%d/%m')} · {r['opponent']}", axis=1
@@ -63,12 +95,16 @@ else:
             "Round 2 - Par 1","Round 2 - Par 2","Round 2 - Par 3",
         ]])
 
-        st.metric("Score", best["Score"])
-        st.metric("Sejre", best["Historiske sejre"])
+        col1, col2 = st.columns(2)
+        col1.metric("Score", best["Score"])
+        col2.metric("Sejre", best["Historiske sejre"])
 
         st.subheader("Alle forslag")
-        st.dataframe(results)
+        st.dataframe(results, use_container_width=True, hide_index=True)
 
         st.subheader("Makkerpar historik")
         hist = selected_pair_history(ids, individual)
-        st.dataframe(hist.drop(columns=["pair_key"]))
+        if hist.empty:
+            st.info("Ingen makkerpar-historik for de valgte spillere endnu.")
+        else:
+            st.dataframe(hist.drop(columns=["pair_key"]), use_container_width=True, hide_index=True)
