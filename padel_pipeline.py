@@ -113,9 +113,7 @@ def url_team_match_details(team_match_id: int) -> str:
 
 
 def url_pool_standings(pool_id: int) -> str:
-    raise NotImplementedError(
-        "Find Request URL i DevTools for standings-endpointet med ScoresViewModels."
-    )
+    return f"{API_BASE}/teamleague/GetTeamStandingsAsync?poolId={pool_id}&language=en"
 
 
 # ============================================================
@@ -176,19 +174,13 @@ def parse_individual_matches(
             our_sets_won = score["FirstParticipantScore"]
             their_sets_won = score["SecondParticipantScore"]
             we_won = score["IsFirstParticipantWinner"]
-            sets = [
-                (s["FirstParticipantScore"], s["SecondParticipantScore"])
-                for s in sets_raw
-            ]
+            sets = [(s["FirstParticipantScore"], s["SecondParticipantScore"]) for s in sets_raw]
         else:
             our_side, their_side = cd, ch
             our_sets_won = score["SecondParticipantScore"]
             their_sets_won = score["FirstParticipantScore"]
             we_won = not score["IsFirstParticipantWinner"]
-            sets = [
-                (s["SecondParticipantScore"], s["FirstParticipantScore"])
-                for s in sets_raw
-            ]
+            sets = [(s["SecondParticipantScore"], s["FirstParticipantScore"]) for s in sets_raw]
 
         games_won = sum(a for a, _ in sets)
         games_lost = sum(b for _, b in sets)
@@ -223,10 +215,7 @@ def parse_lineup(raw: dict, our_team_id: int) -> pd.DataFrame:
 
     rows = []
     for p in ours["Players"]:
-        points = {
-            rt["RankingType"]: rt["Points"]
-            for rt in p.get("RankingTypePoints", [])
-        }
+        points = {rt["RankingType"]: rt["Points"] for rt in p.get("RankingTypePoints", [])}
         rows.append({
             "player_id": p["PlayerId"],
             "full_name": f"{p['FirstName']} {p['LastName']}".strip(),
@@ -237,11 +226,7 @@ def parse_lineup(raw: dict, our_team_id: int) -> pd.DataFrame:
             "role": "Captain" if p["TeamParticipantType"] == 3 else "Player",
         })
 
-    return (
-        pd.DataFrame(rows)
-        .sort_values("ranking_pts", ascending=False)
-        .reset_index(drop=True)
-    )
+    return pd.DataFrame(rows).sort_values("ranking_pts", ascending=False).reset_index(drop=True)
 
 
 def parse_standings(raw: dict) -> pd.DataFrame:
@@ -283,15 +268,7 @@ def _load_availability_workbook() -> pd.DataFrame:
 
 
 def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
-    """
-    Parser den øverste del af arket til:
-    1) player_overview: spillere som rækker
-    2) matches: liste af kampe med hvem der kan spille
-    """
     df = df_raw.copy()
-
-    # Rækker/kolonner er baseret på det konkrete ark-layout vist i billedet
-    # Spillere ligger ca. på rækker 10-19 (0-baseret i pandas efter read_excel)
     player_start = 10
     player_end = 19
 
@@ -305,16 +282,9 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
         if not name:
             continue
 
-        players.append({
-            "Spiller": name,
-            "Side": side,
-            "Ønsket": wanted,
-            "Kampe": played,
-            "_row_idx": r,
-        })
+        players.append({"Spiller": name, "Side": side, "Ønsket": wanted, "Kampe": played, "_row_idx": r})
 
     player_df = pd.DataFrame(players)
-
     matches = []
     col = 4
     max_col = df.shape[1]
@@ -346,8 +316,6 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
                     away_val if away_val else "Modstander": "x" if can_away else "",
                 })
 
-            match_df = pd.DataFrame(rows)
-
             title_parts = [part for part in [date_val, time_val, home_val, away_val] if part]
             title = " · ".join(title_parts) if title_parts else f"Kamp kolonne {col}"
 
@@ -358,7 +326,7 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
                 "home": home_val,
                 "away": away_val,
                 "available_count": available_count,
-                "table": match_df,
+                "table": pd.DataFrame(rows),
             })
 
         col += 2
@@ -372,11 +340,7 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
 def load_availability_data() -> dict:
     raw = _load_availability_workbook()
     players, matches = parse_availability_table(raw)
-    return {
-        "raw": raw,
-        "players": players,
-        "matches": matches,
-    }
+    return {"raw": raw, "players": players, "matches": matches}
 
 
 # ============================================================
@@ -388,11 +352,7 @@ def build_dataset(
     refresh: bool = False,
 ) -> dict:
     try:
-        raw_tm = fetch(
-            url_team_matches(our_team_id),
-            cache_key=f"team_matches_{our_team_id}",
-            refresh=refresh,
-        )
+        raw_tm = fetch(url_team_matches(our_team_id), cache_key=f"team_matches_{our_team_id}", refresh=refresh)
         team_matches = parse_team_matches(raw_tm, our_team_id)
     except Exception as e:
         raise RuntimeError(
@@ -408,27 +368,13 @@ def build_dataset(
         tm_id = int(row["team_match_id"])
 
         try:
-            raw_det = fetch(
-                url_team_match_details(tm_id),
-                cache_key=f"match_details_{tm_id}",
-                refresh=refresh,
-            )
-            all_ind.extend(
-                parse_individual_matches(
-                    raw_det,
-                    tm_id,
-                    row["we_are_challenger"],
-                )
-            )
+            raw_det = fetch(url_team_match_details(tm_id), cache_key=f"match_details_{tm_id}", refresh=refresh)
+            all_ind.extend(parse_individual_matches(raw_det, tm_id, row["we_are_challenger"]))
         except Exception as e:
             print(f"⚠ Kunne ikke hente detaljer for kamp {tm_id}: {e}")
 
         try:
-            raw_lu = fetch(
-                url_team_match_lineup(tm_id),
-                cache_key=f"match_lineup_{tm_id}",
-                refresh=refresh,
-            )
+            raw_lu = fetch(url_team_match_lineup(tm_id), cache_key=f"match_lineup_{tm_id}", refresh=refresh)
             latest_lineup = parse_lineup(raw_lu, our_team_id)
         except Exception as e:
             print(f"⚠ Kunne ikke hente lineup for kamp {tm_id}: {e}")
@@ -436,11 +382,7 @@ def build_dataset(
     individual = pd.DataFrame(all_ind)
 
     try:
-        raw_st = fetch(
-            url_pool_standings(pool_id),
-            cache_key=f"standings_{pool_id}",
-            refresh=refresh,
-        )
+        raw_st = fetch(url_pool_standings(pool_id), cache_key=f"standings_{pool_id}", refresh=refresh)
         standings = parse_standings(raw_st)
     except Exception as e:
         print(f"⚠ Kunne ikke hente stilling for pulje {pool_id}: {e}")
@@ -464,78 +406,41 @@ def build_dataset(
 # ============================================================
 # Statistik
 # ============================================================
-def stat_win_loss(
-    individual: pd.DataFrame,
-    lineup: pd.DataFrame | None = None,
-) -> pd.DataFrame:
+def stat_win_loss(individual: pd.DataFrame, lineup: pd.DataFrame | None = None) -> pd.DataFrame:
     if individual.empty:
         return pd.DataFrame()
 
-    p1 = individual[["our_p1_id", "our_p1_name", "won"]].rename(
-        columns={"our_p1_id": "player_id", "our_p1_name": "name"}
-    )
-    p2 = individual[["our_p2_id", "our_p2_name", "won"]].rename(
-        columns={"our_p2_id": "player_id", "our_p2_name": "name"}
-    )
+    p1 = individual[["our_p1_id", "our_p1_name", "won"]].rename(columns={"our_p1_id": "player_id", "our_p1_name": "name"})
+    p2 = individual[["our_p2_id", "our_p2_name", "won"]].rename(columns={"our_p2_id": "player_id", "our_p2_name": "name"})
     per = pd.concat([p1, p2], ignore_index=True)
 
-    stats = (
-        per.groupby(["player_id", "name"])["won"]
-        .agg(played="count", wins="sum")
-        .reset_index()
-    )
+    stats = per.groupby(["player_id", "name"])["won"].agg(played="count", wins="sum").reset_index()
     stats["losses"] = stats["played"] - stats["wins"]
     stats["win_pct"] = (stats["wins"] / stats["played"] * 100).round(1)
 
     if lineup is not None and not lineup.empty:
-        stats = stats.merge(
-            lineup[["player_id", "ranking_pts", "has_license", "role"]],
-            on="player_id",
-            how="left",
-        )
+        stats = stats.merge(lineup[["player_id", "ranking_pts", "has_license", "role"]], on="player_id", how="left")
 
-    return stats.sort_values(
-        ["win_pct", "played"],
-        ascending=[False, False],
-    ).reset_index(drop=True)
+    return stats.sort_values(["win_pct", "played"], ascending=[False, False]).reset_index(drop=True)
 
 
-def stat_best_pairs(
-    individual: pd.DataFrame,
-    min_matches: int = 1,
-) -> pd.DataFrame:
+def stat_best_pairs(individual: pd.DataFrame, min_matches: int = 1) -> pd.DataFrame:
     if individual.empty:
         return pd.DataFrame()
 
     df = individual.copy()
-    df["pair_key"] = df.apply(
-        lambda r: tuple(sorted([r["our_p1_id"], r["our_p2_id"]])),
-        axis=1,
-    )
-    df["pair_name"] = df.apply(
-        lambda r: " & ".join(sorted([r["our_p1_name"], r["our_p2_name"]])),
-        axis=1,
-    )
+    df["pair_key"] = df.apply(lambda r: tuple(sorted([r["our_p1_id"], r["our_p2_id"]])), axis=1)
+    df["pair_name"] = df.apply(lambda r: " & ".join(sorted([r["our_p1_name"], r["our_p2_name"]])), axis=1)
 
-    stats = (
-        df.groupby(["pair_key", "pair_name"])["won"]
-        .agg(played="count", wins="sum")
-        .reset_index()
-    )
+    stats = df.groupby(["pair_key", "pair_name"])["won"].agg(played="count", wins="sum").reset_index()
     stats["losses"] = stats["played"] - stats["wins"]
     stats["win_pct"] = (stats["wins"] / stats["played"] * 100).round(1)
     stats = stats[stats["played"] >= min_matches]
 
-    return stats.sort_values(
-        ["win_pct", "played"],
-        ascending=[False, False],
-    ).reset_index(drop=True)
+    return stats.sort_values(["win_pct", "played"], ascending=[False, False]).reset_index(drop=True)
 
 
-def stat_per_match(
-    team_matches: pd.DataFrame,
-    individual: pd.DataFrame,
-) -> pd.DataFrame:
+def stat_per_match(team_matches: pd.DataFrame, individual: pd.DataFrame) -> pd.DataFrame:
     if individual.empty:
         out = team_matches.copy()
         out["doubles_won"] = pd.NA
@@ -543,16 +448,12 @@ def stat_per_match(
         out["games_diff"] = pd.NA
         return out
 
-    agg = (
-        individual.groupby("team_match_id")
-        .agg(
-            doubles_won=("won", "sum"),
-            doubles_played=("won", "count"),
-            total_games_won=("games_won", "sum"),
-            total_games_lost=("games_lost", "sum"),
-        )
-        .reset_index()
-    )
+    agg = individual.groupby("team_match_id").agg(
+        doubles_won=("won", "sum"),
+        doubles_played=("won", "count"),
+        total_games_won=("games_won", "sum"),
+        total_games_lost=("games_lost", "sum"),
+    ).reset_index()
     agg["games_diff"] = agg["total_games_won"] - agg["total_games_lost"]
 
     return team_matches.merge(agg, on="team_match_id", how="left")
@@ -563,79 +464,14 @@ def stat_per_match(
 # ============================================================
 if __name__ == "__main__":
     data = build_dataset()
-
     print("=" * 70)
     print("HOLDKAMPE")
     print("=" * 70)
     tm = data["team_matches"]
-    print(
-        tm[[
-            "round",
-            "datetime",
-            "opponent",
-            "venue",
-            "our_score",
-            "their_score",
-            "won",
-        ]].to_string(index=False)
-    )
+    print(tm[["round", "datetime", "opponent", "venue", "our_score", "their_score", "won"]].to_string(index=False))
 
     if not data["standings"].empty:
         print("\n" + "=" * 70)
         print("PULJESTILLING")
         print("=" * 70)
-        print(
-            data["standings"][[
-                "standing",
-                "team_name",
-                "match_points",
-                "played",
-                "wins",
-                "losses",
-                "sets_diff",
-                "games_diff",
-            ]].to_string(index=False)
-        )
-
-    print("\n" + "=" * 70)
-    print("WIN/LOSS PR. SPILLER")
-    print("=" * 70)
-    wl = stat_win_loss(data["individual"], data["lineup"])
-    if wl.empty:
-        print("Ingen individuelle kampdata hentet endnu.")
-    else:
-        print(wl.to_string(index=False))
-
-    print("\n" + "=" * 70)
-    print("BEDSTE MAKKERPAR")
-    print("=" * 70)
-    bp = stat_best_pairs(data["individual"])
-    if bp.empty:
-        print("Ingen individuelle kampdata hentet endnu.")
-    else:
-        print(bp.to_string(index=False))
-
-    if data["lineup"] is not None and not data["lineup"].empty:
-        print("\n" + "=" * 70)
-        print("TRUP / RANKING-POINT")
-        print("=" * 70)
-        print(data["lineup"].to_string(index=False))
-
-    print("\n" + "=" * 70)
-    print("STATS PR. HOLDKAMP")
-    print("=" * 70)
-    per = stat_per_match(data["team_matches"], data["individual"])
-    cols = [
-        "round",
-        "opponent",
-        "our_score",
-        "their_score",
-        "doubles_won",
-        "doubles_played",
-        "games_diff",
-    ]
-    vis = per[cols].dropna(subset=["doubles_played"])
-    if vis.empty:
-        print("Ingen individuelle kampdata hentet endnu.")
-    else:
-        print(vis.to_string(index=False))
+        print(data["standings"][["standing", "team_name", "match_points", "played", "wins", "losses", "sets_diff", "games_diff"]].to_string(index=False))
