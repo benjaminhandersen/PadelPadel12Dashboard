@@ -29,6 +29,107 @@ st.set_page_config(
 
 
 # ============================================================
+# Hjælpefunktioner
+# ============================================================
+def fmt_pair(row: pd.Series, prefix: str) -> str:
+    return f"{row[f'{prefix}_p1_name']} & {row[f'{prefix}_p2_name']}"
+
+
+def fmt_int(value, default: str = "—") -> str:
+    if pd.isna(value):
+        return default
+    return str(int(value))
+
+
+def fmt_signed(value, default: str = "—") -> str:
+    if pd.isna(value):
+        return default
+    return f"{int(value):+d}"
+
+
+def match_detail_table(sub: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for _, r in sub.iterrows():
+        rows.append({
+            "Udfald": "✅ Vundet" if r["won"] else "❌ Tabt",
+            "Os": fmt_pair(r, "our"),
+            "Modstandere": fmt_pair(r, "opp"),
+            "Sæt": r["sets_str"],
+            "Sæt vundet": int(r["sets_won"]),
+            "Sæt tabt": int(r["sets_lost"]),
+            "Games vundet": int(r["games_won"]),
+            "Games tabt": int(r["games_lost"]),
+            "Games±": int(r["games_diff"]),
+        })
+    return pd.DataFrame(rows)
+
+
+def match_highlights(sub: pd.DataFrame) -> dict[str, str]:
+    if sub.empty:
+        return {
+            "best": "—",
+            "closest": "—",
+            "largest_loss": "—",
+        }
+
+    best = sub.sort_values("games_diff", ascending=False).iloc[0]
+    closest = sub.assign(abs_diff=sub["games_diff"].abs()).sort_values("abs_diff").iloc[0]
+    losses = sub[~sub["won"]].copy()
+
+    if losses.empty:
+        largest_loss_text = "Ingen tabte individuelle kampe"
+    else:
+        largest_loss = losses.sort_values("games_diff").iloc[0]
+        largest_loss_text = (
+            f"{fmt_pair(largest_loss, 'our')} ({largest_loss['sets_str']}, "
+            f"{int(largest_loss['games_diff']):+d})"
+        )
+
+    return {
+        "best": f"{fmt_pair(best, 'our')} ({best['sets_str']}, {int(best['games_diff']):+d})",
+        "closest": f"{fmt_pair(closest, 'our')} ({closest['sets_str']}, {int(closest['games_diff']):+d})",
+        "largest_loss": largest_loss_text,
+    }
+
+
+def player_contribution_table(sub: pd.DataFrame) -> pd.DataFrame:
+    if sub.empty:
+        return pd.DataFrame()
+
+    p1 = sub[["our_p1_id", "our_p1_name", "won", "games_won", "games_lost", "games_diff"]].rename(
+        columns={"our_p1_id": "player_id", "our_p1_name": "Spiller"}
+    )
+    p2 = sub[["our_p2_id", "our_p2_name", "won", "games_won", "games_lost", "games_diff"]].rename(
+        columns={"our_p2_id": "player_id", "our_p2_name": "Spiller"}
+    )
+    per_player = pd.concat([p1, p2], ignore_index=True)
+
+    out = (
+        per_player.groupby(["player_id", "Spiller"])
+        .agg(
+            Kampe=("won", "count"),
+            V=("won", "sum"),
+            Games_vundet=("games_won", "sum"),
+            Games_tabt=("games_lost", "sum"),
+            Games_diff=("games_diff", "sum"),
+        )
+        .reset_index()
+    )
+    out["T"] = out["Kampe"] - out["V"]
+    out["Win %"] = (out["V"] / out["Kampe"] * 100).round(1)
+
+    return (
+        out.rename(columns={
+            "Games_vundet": "Games vundet",
+            "Games_tabt": "Games tabt",
+            "Games_diff": "Games±",
+        })[["Spiller", "Kampe", "V", "T", "Win %", "Games vundet", "Games tabt", "Games±"]]
+        .sort_values(["V", "Games±", "Kampe"], ascending=[False, False, False])
+        .reset_index(drop=True)
+    )
+
+
+# ============================================================
 # Data (cached, så Streamlit ikke kalder Rankedin ved hver re-render)
 # ============================================================
 @st.cache_data(ttl=60 * 15)
@@ -72,6 +173,7 @@ individual = data["individual"]
 lineup = data["lineup"]
 standings = data["standings"]
 availability = data.get("availability", {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": []})
+per_match = stat_per_match(team_matches, individual)
 
 
 # ============================================================
@@ -204,47 +306,103 @@ with tab_pairs:
 
 # ---------- Kampe ----------
 with tab_matches:
-    st.subheader("Kampoversigt")
+    st.subheader("Kampstatistik")
 
-    played = team_matches[team_matches["played"]].copy()
+    played = per_match[per_match["played"]].copy()
     if played.empty:
         st.info("Ingen spillede kampe i data.")
     else:
+        overview = played.rename(columns={
+            "round": "Runde",
+            "datetime": "Dato",
+            "opponent": "Modstander",
+            "venue": "H/U",
+            "our_score": "Os",
+            "their_score": "Dem",
+            "doubles_won": "Ind. vundet",
+            "doubles_played": "Ind. spillet",
+            "total_games_won": "Games vundet",
+            "total_games_lost": "Games tabt",
+            "games_diff": "Games±",
+        }).copy()
+        overview["Dato"] = overview["Dato"].dt.strftime("%d/%m/%Y")
+        overview["H/U"] = overview["H/U"].map({"home": "Hjemme", "away": "Ude"}).fillna(overview["H/U"])
+        overview["Resultat"] = overview.apply(
+            lambda r: f"{fmt_int(r['Os'])}–{fmt_int(r['Dem'])}",
+            axis=1,
+        )
+
+        st.markdown("**Samlet kampoversigt**")
+        st.dataframe(
+            overview[[
+                "Runde",
+                "Dato",
+                "Modstander",
+                "H/U",
+                "Resultat",
+                "Ind. vundet",
+                "Ind. spillet",
+                "Games vundet",
+                "Games tabt",
+                "Games±",
+            ]],
+            use_container_width=True,
+            hide_index=True,
+        )
+
         played["label"] = played.apply(
             lambda r: f"R{r['round']} · {r['datetime'].strftime('%d/%m')} · "
                       f"{r['opponent']} ({'hjemme' if r['venue']=='home' else 'ude'})",
             axis=1,
         )
-        choice = st.selectbox("Vælg kamp", played["label"].tolist())
+        choice = st.selectbox("Vælg kamp for detaljer", played["label"].tolist())
         tm_id = played.loc[played["label"] == choice, "team_match_id"].iloc[0]
-
         chosen = played[played["team_match_id"] == tm_id].iloc[0]
-
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Resultat", f"{int(chosen['our_score'])} – {int(chosen['their_score'])}")
-        c2.metric("Sted", chosen["location"])
-        c3.metric("Udfald", "✅ Vundet" if chosen["won"] else "❌ Tabt")
+        sub = individual[individual["team_match_id"] == tm_id].copy()
 
         st.divider()
-        st.markdown("**Individuelle kampe**")
+        st.markdown(f"### Runde {chosen['round']} mod {chosen['opponent']}")
 
-        sub = individual[individual["team_match_id"] == tm_id].copy()
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Holdkamp", f"{fmt_int(chosen['our_score'])} – {fmt_int(chosen['their_score'])}")
+        c2.metric("Udfald", "✅ Vundet" if chosen["won"] else "❌ Tabt")
+        c3.metric("Individuelle", f"{fmt_int(chosen.get('doubles_won'))} / {fmt_int(chosen.get('doubles_played'))}")
+        c4.metric("Games", f"{fmt_int(chosen.get('total_games_won'))} – {fmt_int(chosen.get('total_games_lost'))}")
+        c5.metric("Games±", fmt_signed(chosen.get("games_diff")))
+
+        venue = "Hjemme" if chosen["venue"] == "home" else "Ude"
+        st.caption(
+            f"{chosen['datetime'].strftime('%d/%m/%Y %H:%M')} · {venue} · "
+            f"{chosen['location'] or 'Ukendt spillested'}"
+        )
+
         if sub.empty:
             st.info("Ingen detaljer fundet for denne holdkamp.")
         else:
-            def fmt_pair(row, prefix):
-                return f"{row[f'{prefix}_p1_name']} & {row[f'{prefix}_p2_name']}"
+            highlights = match_highlights(sub)
+            h1, h2, h3 = st.columns(3)
+            h1.info(f"**Bedste individuelle kamp**\n\n{highlights['best']}")
+            h2.info(f"**Tætteste kamp**\n\n{highlights['closest']}")
+            h3.info(f"**Største nederlag**\n\n{highlights['largest_loss']}")
 
-            rows = []
-            for _, r in sub.iterrows():
-                rows.append({
-                    "Udfald": "✅" if r["won"] else "❌",
-                    "Os": fmt_pair(r, "our"),
-                    "Modstandere": fmt_pair(r, "opp"),
-                    "Sæt": r["sets_str"],
-                    "Games±": f"{r['games_diff']:+d}",
-                })
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.markdown("**Individuelle kampe**")
+            details = match_detail_table(sub)
+            st.dataframe(
+                details.style.format({
+                    "Games±": "{:+d}",
+                    "Win %": "{:.1f}",
+                }),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            st.markdown("**Spillerbidrag i valgt holdkamp**")
+            contrib = player_contribution_table(sub)
+            st.dataframe(
+                contrib.style.format({"Games±": "{:+d}", "Win %": "{:.1f}"}),
+                use_container_width=True,
+                hide_index=True,
+            )
 
 
 # ---------- Kommende ----------
