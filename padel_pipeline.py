@@ -32,6 +32,10 @@ API_BASE = "https://api.rankedin.com/v1"
 OUR_TEAM_ID = 2701885
 OUR_POOL_ID = 11353
 
+# Hvor længe lokale Rankedin JSON-filer må genbruges.
+# 15 min passer med Streamlit-cache og betyder at nye resultater kommer ind løbende.
+RANKEDIN_CACHE_TTL_SECONDS = 60 * 15
+
 AVAILABILITY_SHEET_XLSX_URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=xlsx"
@@ -50,10 +54,17 @@ SESSION.headers.update({
 # ============================================================
 # HTTP med lokal cache
 # ============================================================
+def _cache_is_fresh(cache_file: Path, ttl_seconds: int = RANKEDIN_CACHE_TTL_SECONDS) -> bool:
+    if not cache_file.exists():
+        return False
+    age_seconds = time.time() - cache_file.stat().st_mtime
+    return age_seconds < ttl_seconds
+
+
 def fetch(url: str, cache_key: str, refresh: bool = False) -> dict | list:
     cache_file = CACHE / f"{cache_key}.json"
 
-    if cache_file.exists() and not refresh:
+    if cache_file.exists() and not refresh and _cache_is_fresh(cache_file):
         text = cache_file.read_text(encoding="utf-8").strip()
         if not text:
             raise ValueError(f"Cache-filen er tom: {cache_file}")
@@ -463,7 +474,7 @@ def stat_per_match(team_matches: pd.DataFrame, individual: pd.DataFrame) -> pd.D
 # CLI
 # ============================================================
 if __name__ == "__main__":
-    data = build_dataset()
+    data = build_dataset(refresh=True)
     print("=" * 70)
     print("HOLDKAMPE")
     print("=" * 70)
