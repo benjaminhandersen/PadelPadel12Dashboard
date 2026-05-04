@@ -25,6 +25,49 @@ def fmt_pair(row, prefix):
     return f"{row[f'{prefix}_p1_name']} & {row[f'{prefix}_p2_name']}"
 
 
+def normalize_name(value: str) -> str:
+    return str(value or "").lower().replace(" ", "").replace("-", "")
+
+
+def resolve_team_row(standings: pd.DataFrame, team_matches: pd.DataFrame, team_id: int, active: dict) -> pd.DataFrame:
+    """Find our row in standings even when Rankedin participant_id differs from team_id."""
+    if standings.empty:
+        return pd.DataFrame()
+
+    # 1) Direct ID match when Rankedin uses the same id in both endpoints.
+    row = standings[standings["participant_id"] == team_id]
+    if not row.empty:
+        return row
+
+    # 2) Configured display/team name, e.g. PadelPadel12.
+    configured_names = [
+        active.get("team_name", ""),
+        active.get("label", ""),
+    ]
+    for name in configured_names:
+        needle = normalize_name(name)
+        if not needle:
+            continue
+        row = standings[standings["team_name"].apply(lambda x: needle in normalize_name(x) or normalize_name(x) in needle)]
+        if not row.empty:
+            return row
+
+    # 3) Infer from standings names that are NOT opponents in our match list.
+    # team_matches only contains opponents, while standings contains every team including us.
+    if not team_matches.empty and "opponent" in team_matches.columns:
+        opponent_names = {normalize_name(x) for x in team_matches["opponent"].dropna().unique()}
+        candidates = standings[~standings["team_name"].apply(lambda x: normalize_name(x) in opponent_names)]
+        if len(candidates) == 1:
+            return candidates
+
+    # 4) Best-effort fallback: if config name is absent but team url/team id is known, prefer a team containing 'padelpadel'.
+    row = standings[standings["team_name"].str.contains("PadelPadel", case=False, na=False)]
+    if not row.empty:
+        return row
+
+    return pd.DataFrame()
+
+
 def match_detail_table(sub: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, r in sub.iterrows():
@@ -128,8 +171,9 @@ standings = data["standings"]
 availability = data.get("availability", {"players": pd.DataFrame(), "matches": []})
 per_match = stat_per_match(team_matches, individual)
 
-our_row = standings[standings["participant_id"] == team_id] if not standings.empty else pd.DataFrame()
-our_name = our_row["team_name"].iloc[0] if not our_row.empty else f"Team {team_id}"
+our_row = resolve_team_row(standings, team_matches, team_id, active)
+our_name = our_row["team_name"].iloc[0] if not our_row.empty else active.get("team_name", f"Team {team_id}")
+our_participant_id = int(our_row["participant_id"].iloc[0]) if not our_row.empty else team_id
 
 st.title(our_name)
 st.caption(f"{season_name} · kilde: rankedin.com")
@@ -137,8 +181,9 @@ st.caption(f"{season_name} · kilde: rankedin.com")
 col1, col2, col3, col4 = st.columns(4)
 if not our_row.empty:
     s = our_row.iloc[0]
+    total_matches = int(standings["played"].max()) if "played" in standings.columns and not standings.empty else len(team_matches)
     col1.metric("Placering", f"{s['standing']} / {len(standings)}")
-    col2.metric("Kampe", f"{s['played']} / {len(team_matches)}")
+    col2.metric("Kampe", f"{s['played']} / {total_matches}")
     col3.metric("Vundet / tabt", f"{s['wins']} / {s['losses']}")
     col4.metric("Games-diff", f"{int(s['games_diff']):+d}")
 else:
@@ -171,7 +216,7 @@ with tab_standings:
         })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
 
         def highlight_us(row):
-            return ["background-color: rgba(99,153,255,0.18); font-weight: 600;"] * len(row) if row["participant_id"] == team_id else [""] * len(row)
+            return ["background-color: rgba(99,153,255,0.18); font-weight: 600;"] * len(row) if row["participant_id"] == our_participant_id else [""] * len(row)
 
         st.dataframe(
             show.style.apply(highlight_us, axis=1).format({"Sæt±": "{:+d}", "Games±": "{:+d}"}).hide(subset=["participant_id"], axis=1),
