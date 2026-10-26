@@ -1,6 +1,7 @@
 import streamlit as st
 from fines_connection import require_app_login
 from lineup_ui import render_lineup_suggestions
+from lineup_history import load_lineup_history
 
 from app_config import get_active_season, load_config
 from padel_pipeline import build_dataset
@@ -18,7 +19,8 @@ DATA_CACHE_VERSION = 5
 st.title("🎯 Holdforslag")
 st.caption("2 runder · 3 par pr. runde · samme par kun én gang")
 
-active_key, active = get_active_season(load_config())
+config = load_config()
+active_key, active = get_active_season(config)
 team_id = int(active.get("team_id"))
 pool_id = int(active.get("pool_id"))
 
@@ -27,8 +29,14 @@ pool_id = int(active.get("pool_id"))
 def load_data(team_id: int, pool_id: int, cache_version: int):
     return build_dataset(team_id, pool_id)
 
-with st.spinner("Henter data..."):
+@st.cache_data(ttl=60*15)
+def load_history(seasons, cache_version):
+    return load_lineup_history(seasons)
+
+
+with st.spinner("Henter data fra alle sæsoner..."):
     data = load_data(team_id, pool_id, DATA_CACHE_VERSION)
+    history, history_seasons, history_warnings = load_history(config["seasons"], DATA_CACHE_VERSION)
 
 individual = data["individual"]
 lineup = data["lineup"]
@@ -36,6 +44,16 @@ team_matches = data["team_matches"]
 standings = data["standings"]
 
 players = all_known_players(individual, lineup)
+# Use current roster names for historical IDs, including earlier name changes.
+current_names = dict(zip(players["player_id"], players["name"]))
+if not history.empty:
+    for side in (1, 2):
+        history[f"our_p{side}_name"] = history[f"our_p{side}_id"].map(current_names).fillna(history[f"our_p{side}_name"])
+st.caption(f"Vurderingsgrundlag: alle {len(history_seasons)} indlæste sæsoner · {len(history)} kampe. Alle sæsoner vægter ens.")
+for warning in history_warnings:
+    st.warning(warning)
+if history_warnings:
+    st.warning("Historikken er ufuldstændig. Forslagene bruger de kampe, der kunne indlæses.")
 
 # ---------- Puljestilling ----------
 with st.expander("📊 Puljestilling", expanded=False):
@@ -97,11 +115,11 @@ ids = [name_to_id[n] for n in selected]
 if len(ids) < 6:
     st.warning("Du skal vælge mindst 6 spillere")
 else:
-    results = suggest_two_round_lineups(ids, players, individual, max_results=10)
+    results = suggest_two_round_lineups(ids, players, history, max_results=10)
 
     if results.empty:
         st.info("Ingen forslag")
     else:
         st.subheader("2 · Se opstillingen")
-        hist = selected_pair_history(ids, individual)
+        hist = selected_pair_history(ids, history)
         render_lineup_suggestions(results, hist, selected)

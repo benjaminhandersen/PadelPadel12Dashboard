@@ -131,7 +131,7 @@ def render_lineup_suggestions(results, history, selected_names):
                  'Et nyt par får gennemsnittet af de to spillerscores. Fælles resultater blandes med '
                  'individvurderingen, der vægter som fire kampe. Spillere uden historik får 50. '
                  'Opstillingsscoren er summen af de seks parvurderinger plus 5 % af spillerscoren pr. deltagelse. '
-                 'Vægtene er heuristiske og bruger den valgte sæsons data.')
+                 'Vægtene er heuristiske og bruger alle sæsoner, der er tilføjet dashboardet. Alle sæsoner vægter ens.')
     with st.expander('Sammenlign alle forslag'):
         comparisons = ['<div class="lineup-view">']
         for index, (_, proposal) in enumerate(results.iterrows()):

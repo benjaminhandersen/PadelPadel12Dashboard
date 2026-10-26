@@ -183,6 +183,6 @@ Nye makkerpar får gennemsnittet af spillernes scores og markeres tydeligt.
 Kendte pars fælles resultater blandes med individvurderingen, der vægter som
 fire kampe. Uden individuel historik bruges 50. Den samlede opstillingsscore
 er summen af seks parvurderinger plus 5 % af spillerscoren pr. deltagelse.
-Vægtene er heuristiske, ikke en beregnet vinderchance; kun valgt sæsons data bruges.
+Vægtene er heuristiske, ikke en beregnet vinderchance; alle sæsoner tilføjet dashboardet bruges og vægter ens.
 
 Holdforslag og den kompakte sammenligning viser makkerpar på enkle kort. Kendte par viser sejre/kampe fordelt på bane 1, 2 og 3; ukendt bane indgår kun i den samlede historik. Nye par markeres fortsat tydeligt.
