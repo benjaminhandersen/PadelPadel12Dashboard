@@ -60,11 +60,11 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:22px}
     .lineup-view .lp-stat strong{display:block;font-size:25px;color:white}
     .lineup-view .lp-stat span{font-size:12px;color:#d4e5ea}
-    .lineup-view .lp-rounds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .lineup-view .lp-round{background:#fff;color:#17283e;border:1px solid #dfe7ec;border-radius:20px;padding:20px;min-width:0}
+    .lineup-view .lp-rounds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(5,auto);column-gap:18px;row-gap:12px}
+    .lineup-view .lp-round{display:grid;grid-template-rows:subgrid;grid-row:span 5;background:#fff;color:#17283e;border:1px solid #dfe7ec;border-radius:20px;padding:20px;min-width:0}
     .lineup-view .lp-round-title{display:flex;gap:10px;align-items:center;font-size:20px;font-weight:800;margin-bottom:16px}
     .lineup-view .lp-round-number{background:#e4f4ed;color:#176647;display:grid;place-items:center;width:34px;height:34px;border-radius:10px}
-    .lineup-view .lp-pair{margin:14px 0;border:1px solid #dfe7ec;background:#f4f7fa;border-radius:14px;overflow:hidden}
+    .lineup-view .lp-pair{margin:0;border:1px solid #dfe7ec;background:#f4f7fa;border-radius:14px;overflow:hidden}
     .lineup-view .lp-pair-heading{padding:16px 16px 0}
     .lineup-view .lp-partners{display:flex;flex-direction:column;gap:0}
     .lineup-view .lp-details{padding:0 12px 10px}
@@ -80,7 +80,7 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-comparison .lp-round{padding:12px;border-radius:10px}
     .lineup-view .lp-comparison .lp-round-title{font-size:16px;margin-bottom:8px}
     .lineup-view .lp-comparison .lp-round-number{width:26px;height:26px}
-    .lineup-view .lp-comparison .lp-pair{margin:8px 0}
+    .lineup-view .lp-comparison .lp-rounds{row-gap:8px}
     .lineup-view .lp-comparison .lp-pair-heading{padding:10px 12px 0}
     .lineup-view .lp-comparison .lp-player{font-size:13px}
     .lineup-view .lp-comparison .lp-avatar{width:25px;height:25px;font-size:9px}
@@ -98,7 +98,7 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-work-card strong{font-size:15px;display:block;margin-bottom:12px}
     .lineup-view .lp-chip{display:inline-block;background:#eaf4ef;color:#1a634b;font-size:12px;border-radius:8px;padding:6px 9px;margin:3px;overflow-wrap:anywhere;max-width:100%}
     .lineup-view .lp-empty{font-size:13px;color:#576779}
-    @media(max-width:680px){.lineup-view .lp-rounds,.lineup-view .lp-workload{grid-template-columns:1fr}.lineup-view .lp-hero{padding:20px}.lineup-view .lp-title{font-size:24px}.lineup-view .lp-stats{gap:8px}.lineup-view .lp-stat strong{font-size:22px}.lineup-view .lp-round{padding:16px}}
+    @media(max-width:680px){.lineup-view .lp-rounds,.lineup-view .lp-workload{grid-template-columns:1fr}.lineup-view .lp-rounds{grid-template-rows:none}.lineup-view .lp-round{display:block;grid-row:auto;padding:16px}.lineup-view .lp-pair{margin:12px 0}.lineup-view .lp-hero{padding:20px}.lineup-view .lp-title{font-size:24px}.lineup-view .lp-stats{gap:8px}.lineup-view .lp-stat strong{font-size:22px}}
     </style>'''
     heading = 'Anbefalet opstilling' if selected == 0 else f'Alternativ {selected}'
     parts = [styles, '<div class="lineup-view">',
