@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+from fines_ui import render_fines
 
 from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match
 from player_stats import player_set_stats, season_coverage
@@ -184,9 +185,12 @@ else:
     col3.metric("Vundet / tabt", f"{won_count} / {played_count - won_count}")
     col4.metric("Games-diff", "—")
 
-tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availability = st.tabs(
-    ["Stilling", "Spillere", "Makkerpar", "Kampe", "Kommende", "Tilgængelighed"]
+tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availability, tab_fines = st.tabs(
+    ["Stilling", "Spillere", "Makkerpar", "Kampe", "Kommende", "Tilgængelighed", "Bødekassen"]
 )
+
+with tab_fines:
+    render_fines()
 
 with tab_standings:
     st.subheader("Puljestilling")

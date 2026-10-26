@@ -37,6 +37,22 @@ streamlit run dashboard.py
 
 ## Konfiguration
 
+### Bødekassen
+
+Find fanen **Bødekassen** i dashboardet, eller brug den separate side i menuen
+(den virker også, hvis Rankedin er utilgængelig). Vælg bødetype og tryk på en
+spiller. Overblik viser stillingen; Historik giver fortryd/gendan og CSV-eksport.
+Indstillinger lader jer tilføje spillere og ændre satser for fremtidige bøder.
+Spillernavne og satser følger inspirationsarket; historiske beløb er ikke importeret.
+
+SQLite gemmer registreringer på serveren i `data/fines.sqlite3`, uden for Git.
+Sæt eventuelt `PADEL_FINES_DB` til en fil på et vedvarende drev. Alle brugere af
+samme server deler kassen. Streamlit Clouds lokale disk er ikke varig lagring;
+en ekstern database skal tilsluttes før drift med rigtige fælles data dér.
+Der er endnu ingen login- eller rollebegrænsning: alle med appadgang kan ændre
+bødekassen. Bødesaldo er tildelte bøder, ikke registrerede indbetalinger.
+Kassen er fælles på tværs af sæsonvalg.
+
 Rediger øverst i `padel_pipeline.py`:
 
 ```python
