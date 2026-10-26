@@ -1,5 +1,6 @@
 import streamlit as st
 from fines_connection import require_app_login
+from lineup_ui import render_lineup_suggestions
 
 from app_config import get_active_season, load_config
 from padel_pipeline import build_dataset
@@ -37,7 +38,7 @@ standings = data["standings"]
 players = all_known_players(individual, lineup)
 
 # ---------- Puljestilling ----------
-with st.expander("📊 Puljestilling", expanded=True):
+with st.expander("📊 Puljestilling", expanded=False):
     if standings.empty:
         st.info("Puljestillingen kunne ikke hentes endnu.")
     else:
@@ -83,12 +84,14 @@ if not upcoming.empty:
     )
     st.selectbox("Kamp", upcoming["label"])
 
+st.subheader("1 · Vælg din trup")
 selected = st.multiselect(
     "Vælg spillere der kan spille",
     options=names,
     default=names[:6]
 )
 
+st.caption(f"{len(selected)} spillere valgt · mindst 6 kræves til tre par pr. runde")
 ids = [name_to_id[n] for n in selected]
 
 if len(ids) < 6:
@@ -99,24 +102,6 @@ else:
     if results.empty:
         st.info("Ingen forslag")
     else:
-        best = results.iloc[0]
-
-        st.subheader("Bedste forslag")
-        st.write(best[[
-            "Round 1 - Par 1","Round 1 - Par 2","Round 1 - Par 3",
-            "Round 2 - Par 1","Round 2 - Par 2","Round 2 - Par 3",
-        ]])
-
-        col1, col2 = st.columns(2)
-        col1.metric("Score", best["Score"])
-        col2.metric("Sejre", best["Historiske sejre"])
-
-        st.subheader("Alle forslag")
-        st.dataframe(results, use_container_width=True, hide_index=True)
-
-        st.subheader("Makkerpar historik")
+        st.subheader("2 · Se opstillingen")
         hist = selected_pair_history(ids, individual)
-        if hist.empty:
-            st.info("Ingen makkerpar-historik for de valgte spillere endnu.")
-        else:
-            st.dataframe(hist.drop(columns=["pair_key"]), use_container_width=True, hide_index=True)
+        render_lineup_suggestions(results, hist, selected)
