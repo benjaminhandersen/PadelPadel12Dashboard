@@ -39,6 +39,10 @@ streamlit run dashboard.py
 
 ### Bødekassen
 
+Under Giv bøde vises de oftest givne bødetyper først på tværs af sæsoner.
+Historiske antal tæller med, annullerede bøder tæller ikke, og ved samme antal
+sorteres alfabetisk.
+
 Hele appen kræver adgang ved indgangen, inklusive Holdforslag og direkte links
 til Bødekassen. Holdet ønsker én fælles adgangskode. Aktivér dette i Streamlit
 Community Cloud under appens **Settings → Secrets**:

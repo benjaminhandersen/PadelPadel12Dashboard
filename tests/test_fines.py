@@ -61,6 +61,22 @@ class FinesTest(unittest.TestCase):
         app.radio[0].set_value('Indstillinger').run()
         self.assertFalse(app.text_input)
 
+    def test_fine_buttons_order_by_frequency_including_imported_quantities(self):
+        from streamlit.testing.v1 import AppTest
+        state = {'rules': [
+            {'name': 'Billig', 'amount': 10}, {'name': 'Hyppig', 'amount': 100},
+            {'name': 'Annulleret', 'amount': 20}, {'name': 'Aldrig', 'amount': 50}],
+            'fines': [
+                {'player': 'Benjamin', 'reason': 'Hyppig', 'quantity': 4, 'amount': 400, 'cancelled': False},
+                {'player': 'Benjamin', 'reason': 'Billig', 'amount': 10, 'cancelled': False},
+                {'player': 'Benjamin', 'reason': 'Billig', 'amount': 10, 'cancelled': False},
+                {'player': 'Benjamin', 'reason': 'Annulleret', 'quantity': 100, 'amount': 2000, 'cancelled': True}]}
+        with patch.object(store, 'snapshot', return_value=state):
+            app = AppTest.from_string("from fines_ui import render_fines\nrender_fines(['Benjamin'])").run()
+        self.assertFalse(app.exception)
+        self.assertEqual([b.label.split(' · ')[0] for b in app.button if b.key.startswith('rule_')],
+                         ['Hyppig', 'Billig', 'Aldrig', 'Annulleret'])
+
     def test_overview_breakdown_uses_quantities_and_historical_amounts(self):
         from streamlit.testing.v1 import AppTest
         state = {'rules': [], 'fines': [

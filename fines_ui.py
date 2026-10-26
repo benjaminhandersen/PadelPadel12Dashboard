@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from collections import Counter
 from uuid import uuid4
 
 from fines_connection import get_store
@@ -112,7 +113,12 @@ def render_fines(players=None, store=None):
             rules = {r['name']: r['amount'] for r in state['rules']}
             if reason not in rules:
                 st.markdown('**1 · Vælg bødetype**')
-                for name, amount in rules.items():
+                st.caption('Oftest givne bøder øverst · annullerede bøder tæller ikke med.')
+                counts = Counter()
+                for fine in active:
+                    counts[fine['reason']] += fine.get('quantity', 1)
+                for name in sorted(rules, key=lambda name: (-counts[name], name.casefold(), name)):
+                    amount = rules[name]
                     if st.button(f'{name} · {amount} kr. →', key=f'rule_{name}', use_container_width=True):
                         st.session_state['fines_reason'] = name
                         st.rerun()
