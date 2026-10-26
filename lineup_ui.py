@@ -4,14 +4,6 @@ from html import escape
 import streamlit as st
 
 
-# Decorative court markings; player names remain selectable, accessible HTML.
-COURT_LINES = ('<svg class="lp-court-lines" viewBox="0 0 400 200" preserveAspectRatio="none" '
-               'aria-hidden="true" focusable="false">'
-               '<rect x="10" y="10" width="380" height="180" fill="none"/>'
-               '<path d="M10 50H390 M10 150H390 M200 10V100 M200 100V190"/>'
-               '<path class="lp-net" d="M10 100H390"/></svg>')
-
-
 def _rounds_html(row, history_by_pair, selected_names):
     parts = ['<div class="lp-rounds">']
     for round_number in (1, 2):
@@ -20,7 +12,7 @@ def _rounds_html(row, history_by_pair, selected_names):
         for pair_number in (1, 2, 3):
             names = str(row[f'Round {round_number} - Par {pair_number}']).split(' & ')
             playing.update(names)
-            parts.append(f'<div class="lp-pair"><div class="lp-court">{COURT_LINES}'
+            parts.append('<div class="lp-pair"><div class="lp-pair-heading">'
                          f'<div class="lp-label">Bane {pair_number}</div><div class="lp-partners">')
             for name in names:
                 initials = ''.join(part[0] for part in name.split()[:2]).upper()
@@ -72,14 +64,9 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-round{background:#fff;color:#17283e;border:1px solid #dfe7ec;border-radius:20px;padding:20px;min-width:0}
     .lineup-view .lp-round-title{display:flex;gap:10px;align-items:center;font-size:20px;font-weight:800;margin-bottom:16px}
     .lineup-view .lp-round-number{background:#e4f4ed;color:#176647;display:grid;place-items:center;width:34px;height:34px;border-radius:10px}
-    .lineup-view .lp-pair{margin:14px 0;border:1px solid #dfe7ec;background:#f4f7fa;overflow:hidden}
-    .lineup-view .lp-court{position:relative;background:linear-gradient(140deg,#176673,#154454);min-height:180px;padding:20px;color:white;display:flex;flex-direction:column;justify-content:space-between}
-    .lineup-view .lp-court-lines{position:absolute;inset:0;width:100%;height:100%;stroke:#c8eee3;stroke-width:1.5;opacity:.65;pointer-events:none}
-    .lineup-view .lp-net{stroke:white;stroke-width:3;stroke-dasharray:3 2}
-    .lineup-view .lp-partners{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
-    .lineup-view .lp-court .lp-label{position:relative;color:#e0f8f0;letter-spacing:2px;text-align:center;margin:0}
-    .lineup-view .lp-court .lp-player{flex-direction:column;align-items:center;text-align:center;line-height:1.3;font-size:15px;gap:6px;margin:0;min-width:0}
-    .lineup-view .lp-court .lp-player>span:last-child{background:#164b58;padding:2px 5px;max-width:100%}
+    .lineup-view .lp-pair{margin:14px 0;border:1px solid #dfe7ec;background:#f4f7fa;border-radius:14px;overflow:hidden}
+    .lineup-view .lp-pair-heading{padding:16px 16px 0}
+    .lineup-view .lp-partners{display:flex;flex-direction:column;gap:0}
     .lineup-view .lp-details{padding:0 12px 10px}
     .lineup-view .lp-details .lp-history{margin-top:8px;padding-top:6px;border:0}
     .lineup-view .lp-court-counts{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:12px;color:#254b56;margin-top:6px}
@@ -94,7 +81,7 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-comparison .lp-round-title{font-size:16px;margin-bottom:8px}
     .lineup-view .lp-comparison .lp-round-number{width:26px;height:26px}
     .lineup-view .lp-comparison .lp-pair{margin:8px 0}
-    .lineup-view .lp-comparison .lp-court{min-height:145px;padding:14px}
+    .lineup-view .lp-comparison .lp-pair-heading{padding:10px 12px 0}
     .lineup-view .lp-comparison .lp-player{font-size:13px}
     .lineup-view .lp-comparison .lp-avatar{width:25px;height:25px;font-size:9px}
     .lineup-view .lp-comparison .lp-history{font-size:11px;line-height:1.4}
