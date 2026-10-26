@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 from fines_ui import render_fines
 from fines_connection import require_app_login
+from planning_ui import render_planning
 from lineup_optimizer import all_known_players
 from lineup_history import load_lineup_history, pair_season_stats
 from navigation import render_navigation
@@ -20,7 +21,7 @@ render_navigation()
 
 # Bump when the shape or interpretation of build_dataset() changes. Streamlit
 # otherwise keeps results produced by older parser code in its data cache.
-DATA_CACHE_VERSION = 5
+DATA_CACHE_VERSION = 6
 
 
 def fmt_int(value, default="—"):
@@ -172,7 +173,6 @@ team_matches = data["team_matches"]
 individual = data["individual"]
 lineup = data["lineup"]
 standings = data["standings"]
-availability = data.get("availability", {"players": pd.DataFrame(), "matches": []})
 per_match = stat_per_match(team_matches, individual)
 
 our_row = resolve_team_row(standings, team_matches, team_id, active)
@@ -183,7 +183,7 @@ render_team_header(our_name, season_name, our_row.iloc[0] if not our_row.empty e
 
 with st.container(key="team-overview-tabs"):
     tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availability, tab_fines = st.tabs(
-        ["Overblik", "Spillere", "Makkerpar", "Resultater", "Kampprogram", "Tilgængelighed", "Bødekassen"]
+        ["Overblik", "Spillere", "Makkerpar", "Resultater", "Kampprogram", "Kampplanlægning", "Bødekassen"]
     )
 
 with tab_fines:
@@ -338,27 +338,7 @@ with tab_upcoming:
         render_fixture_cards(upcoming)
 
 with tab_availability:
-    st.subheader("Tilgængelighed")
-    matches = availability.get("matches", [])
-    players_df = availability.get("players", pd.DataFrame())
-    if not matches:
-        st.info(availability.get("reason") or "Kunne ikke hente eller parse tilgængelighedsarket.")
-    else:
-        if availability.get("reason"):
-            st.warning(availability["reason"])
-        titles = [m["title"] for m in matches]
-        selected_title = st.selectbox("Vælg kamp", titles)
-        selected_match = next(m for m in matches if m["title"] == selected_title)
-        st.metric("Antal der kan", selected_match["available_count"])
-        table = selected_match["table"].copy()
-        has_answers = bool((table["Kan spille"] == "Ja").any())
-        only_available = st.checkbox("Vis kun spillere der kan spille", value=has_answers)
-        if only_available:
-            table = table[table["Kan spille"] == "Ja"].copy()
-        st.dataframe(table, use_container_width=True, hide_index=True)
-        if not players_df.empty:
-            st.subheader("Samlet spilleroversigt")
-            st.dataframe(players_df, use_container_width=True, hide_index=True)
+    render_planning(fines_backend, active_key, season_name)
 
 st.divider()
 st.caption(f"Data hentet fra rankedin.com · {len(team_matches)} holdkampe · {len(individual)} individuelle matches parsed.")

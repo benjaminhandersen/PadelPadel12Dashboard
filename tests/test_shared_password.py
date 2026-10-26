@@ -49,7 +49,7 @@ class SharedPasswordTests(unittest.TestCase):
         self.assertFalse(app.radio)
 
     def test_direct_routes_are_protected_before_rankedin_fetch(self):
-        for page in ('dashboard.py', 'pages/1_Holdforslag.py', 'pages/2_Boedekasse.py'):
+        for page in ('dashboard.py', 'pages/1_Holdforslag.py', 'pages/2_Boedekasse.py', 'pages/3_Kampplanlaegning.py'):
             with self.subTest(page=page), patch('padel_pipeline.build_dataset') as fetch:
                 app = AppTest.from_file(page).run()
                 self.assertFalse(app.exception)

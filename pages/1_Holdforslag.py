@@ -16,7 +16,7 @@ st.set_page_config(page_title="Holdforslag", page_icon="🎯", layout="wide")
 require_app_login()
 render_navigation()
 
-DATA_CACHE_VERSION = 5
+DATA_CACHE_VERSION = 6
 
 st.title("🎯 Holdforslag")
 st.caption("2 runder · 3 par pr. runde · samme par kun én gang")

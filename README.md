@@ -194,3 +194,29 @@ kampe har responsive kort; detaljerede tabeller kan fortsat åbnes.
 Oversigten bruger den valgte sæson, mens Holdforslag bruger alle tilføjede sæsoner.
 
 Makkerparstatistikken bruger alle tilføjede sæsoner. Hvert kort viser samlet statistik samt Tidligere sæsoner og Indeværende sæson hver for sig. Indeværende følger sæsonvalget; tidligere samler de øvrige sæsoner. Minimumsfilteret gælder samlet antal kampe.
+
+### Kampplanlægning
+Fanen Kampplanlægning og den selvstændige side erstatter tilgængelighedsarket.
+Alle med holdets fælles login kan trykke **Opret dato**, tilføje flere datoer og
+tidspunkter samt gentage dem på samme ugedag i efterfølgende uger. Der er ingen
+ekstra kode eller kaptajnrolle. Forslagene tilhører den valgte sæson.
+
+Spilleren vælger navn, markerer alle mulige tidspunkter og gemmer samlet.
+Et gemt tidspunkt uden kryds betyder Kan ikke; uden indsendt svar betyder det
+Mangler svar. Ingen mulige tidspunkter skal bekræftes med den særskilte afkrydsning.
+Alle kan rette hinandens svar. Overblikket viser navne, antal og mindst seks
+tilgængelige. **Hent seneste svar** opdaterer andre brugeres ændringer.
+
+Alle kan redigere forslag, sætte svarfrist (til og med kl. 23.59 dansk tid),
+lukke/genåbne, arkivere eller fastlægge en endelig kampdato. Fastlæggelse låser
+svarene, men booker ikke en bane og ændrer ikke Rankedin. Gamle svar bevares
+for uændrede tidspunkter; nye/ændrede tidspunkter står som ubesvarede. Samtidige
+ændringer af samme svar/forslag afvises, så de ikke overskrives ubemærket.
+
+Data ligger i Supabase-tabellerne `padel_planning_polls` og
+`padel_planning_votes`. RPC'er og tabeller er kun tilgængelige for appens
+server efter fælles login, med RLS og uden adgang for offentlige klientroller.
+Den eksisterende fælles spillerliste bruges også uden forbindelse til Rankedin.
+Google-arket hentes ikke længere ved dashboardindlæsning; eksisterende datoer
+og svar er ikke automatisk importeret. Parseren er bevaret til en eventuel
+kontrolleret engangsimport.

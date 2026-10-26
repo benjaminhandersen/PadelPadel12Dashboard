@@ -8,7 +8,7 @@ import fines_ui  # Load UI bindings before mocking the connection in route tests
 
 class AppLoginTests(unittest.TestCase):
     def test_every_entry_point_stops_before_fetching_team_data(self):
-        for page in ('dashboard.py', 'pages/1_Holdforslag.py', 'pages/2_Boedekasse.py'):
+        for page in ('dashboard.py', 'pages/1_Holdforslag.py', 'pages/2_Boedekasse.py', 'pages/3_Kampplanlaegning.py'):
             with self.subTest(page=page), patch('fines_connection.get_store', return_value=None), \
                     patch('padel_pipeline.build_dataset') as fetch:
                 app = AppTest.from_file(page).run()

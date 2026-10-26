@@ -578,18 +578,11 @@ def build_dataset(
         print(f"ADVARSEL: Kunne ikke hente stilling for pulje {pool_id}: {e}")
         standings = pd.DataFrame()
 
-    try:
-        availability = load_availability_data(team_matches)
-    except Exception as e:
-        print(f"ADVARSEL: Kunne ikke hente availability: {e}")
-        availability = {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": [], "reason": str(e)}
-
     return {
         "team_matches": team_matches,
         "individual": individual,
         "lineup": latest_lineup,
         "standings": standings,
-        "availability": availability,
     }
 
 

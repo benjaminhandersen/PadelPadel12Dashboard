@@ -20,7 +20,7 @@ class TeamOverviewTests(unittest.TestCase):
         with patch('fines_connection.require_app_login',return_value=None), patch('fines_ui.render_fines'), patch('padel_pipeline.build_dataset',return_value=sample_data()), patch('app_config.load_config',return_value=config), patch('lineup_history.load_lineup_history',return_value=(sample_data()['individual'], ['Testsæson'], [])):
             app=AppTest.from_file('dashboard.py').run()
         self.assertFalse(app.exception)
-        self.assertEqual([t.label for t in app.tabs],['Overblik','Spillere','Makkerpar','Resultater','Kampprogram','Tilgængelighed','Bødekassen'])
+        self.assertEqual([t.label for t in app.tabs],['Overblik','Spillere','Makkerpar','Resultater','Kampprogram','Kampplanlægning','Bødekassen'])
         html='\n'.join(m.value for m in app.markdown)
         self.assertIn('Holdoverblik',html)
         self.assertIn('Næste kamp',html)
