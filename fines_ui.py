@@ -7,6 +7,36 @@ from fines_overview import render_overview
 from supabase_fines import FinesError, SupabaseFines
 
 
+def normalize_snapshot(state, roster):
+    names = {p['player_id']: p['name'] for p in state.get('players', [])}
+    names.update({p['player_id']: p['name'] for p in roster if p['player_id'] is not None})
+    for fine in state['fines']:
+        fine['player'] = names.get(fine.get('player_id'), fine['player'])
+    return state
+
+
+def render_totals(active):
+    total = sum(f['amount'] for f in active)
+    st.metric('Samlede bøder', f'{total:,} kr.'.replace(',', '.'))
+    count = sum(f.get('quantity', 1) for f in active)
+    st.caption(f'{count} aktive bøder · beløbet viser tildelte bøder, ikke indbetalinger')
+
+
+@st.fragment(run_every=15)
+def render_live_overview(store, roster):
+    """Read fresh data without rerunning Rankedin, the page, or fine-entry controls."""
+    try:
+        state = normalize_snapshot(store.snapshot(), roster)
+    except FinesError as exc:
+        st.error(str(exc))
+        return
+    active = [f for f in state['fines'] if not f['cancelled']]
+    players = sorted({p['name'] for p in roster} | {f['player'] for f in state['fines']})
+    render_totals(active)
+    st.caption('Opdateres automatisk hvert 15. sekund, mens siden er åben.')
+    render_overview(active, players, state['rules'])
+
+
 def render_fines(players=None, store=None):
     roster = [p if isinstance(p, dict) else {'name': str(p), 'player_id': None} for p in (players or [])]
     players = sorted({p['name'].strip() for p in roster if p['name'].strip()})
@@ -21,7 +51,6 @@ def render_fines(players=None, store=None):
         st.caption('Fælles bødekasse · gemmes i Supabase')
     else:
         st.info('Lokal udvikling: denne bødekasse deles ikke med onlineappen.')
-    st.button('Opdater bødekassen', key='fines_refresh', use_container_width=True)
     st.markdown('''<style>
         .st-key-fines_mobile button {min-height: 54px; white-space: normal;}
         </style>''', unsafe_allow_html=True)
@@ -56,6 +85,10 @@ def render_fines(players=None, store=None):
         st.success(message)
     if message := st.session_state.pop('fines_error', None):
         st.error(message)
+    view = st.radio('Vis', ['Giv bøde', 'Overblik', 'Historik', 'Indstillinger'], horizontal=True, key='fines_view')
+    if view == 'Overblik':
+        render_live_overview(store, roster)
+        return
     try:
         state = store.snapshot()
         if remote:
@@ -63,18 +96,10 @@ def render_fines(players=None, store=None):
     except FinesError as exc:
         st.error(str(exc))
         return
+    state = normalize_snapshot(state, roster)
     fines = state['fines']
-    # Stable Rankedin IDs join historical snapshots to current display names.
-    names = {p['player_id']: p['name'] for p in state.get('players', [])}
-    names.update({p['player_id']: p['name'] for p in roster if p['player_id'] is not None})
-    for fine in fines:
-        fine['player'] = names.get(fine.get('player_id'), fine['player'])
     active = [f for f in fines if not f['cancelled']]
-    total = sum(f['amount'] for f in active)
-    st.metric('Samlede bøder', f'{total:,} kr.'.replace(',', '.'))
-    count = sum(f.get('quantity', 1) for f in active)
-    st.caption(f'{count} aktive bøder · beløbet viser tildelte bøder, ikke indbetalinger')
-    view = st.radio('Vis', ['Giv bøde', 'Overblik', 'Historik', 'Indstillinger'], horizontal=True, key='fines_view')
+    render_totals(active)
     ledger_players = sorted(set(players) | {f['player'] for f in fines})
 
     if view == 'Giv bøde':
@@ -103,8 +128,6 @@ def render_fines(players=None, store=None):
                     st.button(f'+ {rules[reason]} kr. · {player}', key=f'fine_{identity}',
                               use_container_width=True, on_click=give, args=(player, reason, entry['player_id']))
 
-    elif view == 'Overblik':
-        render_overview(active, ledger_players, state['rules'])
     elif view == 'Historik':
         player_filter = st.selectbox('Spiller', ['Alle'] + ledger_players, key='fines_filter')
         show_cancelled = st.checkbox('Vis annullerede', value=True)

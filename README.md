@@ -69,6 +69,9 @@ ikke et separat login. Importerede bøder og spiller-id'er bevares.
 Find fanen **Bødekassen** i dashboardet, eller brug den separate side i menuen
 (den virker også, hvis Rankedin er utilgængelig). Vælg bødetype og tryk på en
 spiller. Overblik viser stillingen; Historik giver fortryd/gendan og CSV-eksport.
+Overblik henter automatisk friske bøder hvert 15. sekund, mens siden er åben.
+Kun overblikket opdateres; Rankedin, tildelingsknapper og indstillinger genkøres
+ikke af timeren. Filtre og sortering bevares. Egne tildelinger vises straks.
 Indstillinger lader jer ændre satser for fremtidige bøder.
 Spillere hentes fra Rankedin (holdopstilling og holdets kampe i valgt sæson).
 Spillere kan ikke tilføjes manuelt. Uden spillerdata blokeres nye bøder,
