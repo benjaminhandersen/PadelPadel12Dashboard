@@ -197,8 +197,10 @@ Makkerparstatistikken bruger alle tilføjede sæsoner. Hvert kort viser samlet s
 
 ### Kampplanlægning
 Fanen Kampplanlægning og den selvstændige side erstatter tilgængelighedsarket.
-Alle med holdets fælles login kan trykke **Opret dato**, tilføje flere datoer og
-tidspunkter samt gentage dem på samme ugedag i efterfølgende uger. Der er ingen
+Alle med holdets fælles login kan trykke **Opret dato** og markere flere dage
+direkte i kalenderen, også på tværs af måneder. De valgte dage vises i en liste
+nedenunder med individuelle tidspunkter; hver dag kan have flere tidspunkter.
+Tryk igen på en markeret kalenderdag for at fjerne den. Der er ingen
 ekstra kode eller kaptajnrolle. Forslagene tilhører den valgte sæson.
 
 Spilleren vælger navn, markerer alle mulige tidspunkter og gemmer samlet.

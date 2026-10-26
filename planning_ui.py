@@ -1,4 +1,5 @@
 """Mobile-friendly date proposals and shared player availability."""
+import calendar
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 
@@ -28,55 +29,115 @@ def mutation_error():
     st.error('Kunne ikke gemme. Forslaget eller svaret kan være ændret af en anden, eller svarfristen er udløbet. Hent seneste svar og prøv igen.')
 
 
+MONTHS = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
+          'Juli', 'August', 'September', 'Oktober', 'November', 'December']
+
+
+def shift_month(key, direction):
+    current = date.fromisoformat(st.session_state[key])
+    month_index = current.year * 12 + current.month - 1 + direction
+    st.session_state[key] = date(month_index // 12, month_index % 12 + 1, 1).isoformat()
+
+
+def toggle_day(key, value):
+    selected = set(st.session_state[key])
+    if value in selected:
+        selected.remove(value)
+    else:
+        selected.add(value)
+    st.session_state[key] = sorted(selected)
+
+
+def render_calendar(prefix, initial_days):
+    days_key, month_key = prefix + '_days', prefix + '_month'
+    selected = st.session_state.setdefault(days_key, list(initial_days))
+    start = date.fromisoformat(initial_days[0]) if initial_days else today()
+    st.session_state.setdefault(month_key, start.replace(day=1).isoformat())
+    month = date.fromisoformat(st.session_state[month_key])
+    with st.container(key=prefix + '_calendar', border=True):
+        st.markdown('''<style>
+        [class*="planning_edit_"][class*="_calendar"] [data-testid="stHorizontalBlock"] {
+            flex-direction:row!important; flex-wrap:nowrap!important; gap:4px;
+        }
+        [class*="planning_edit_"][class*="_calendar"] [data-testid="stColumn"] {
+            min-width:0!important; flex:1 1 0!important; width:0!important;
+        }
+        [class*="planning_edit_"][class*="_calendar"] button {
+            padding:0.25rem!important; min-height:42px;
+        }
+        [class*="planning_edit_"][class*="_calendar"] button p {font-size:14px;}
+        </style>''', unsafe_allow_html=True)
+        prev, heading, following = st.columns([1, 5, 1])
+        with prev:
+            st.button('‹', key=prefix + '_prev', help='Forrige måned',
+                      on_click=shift_month, args=(month_key, -1), use_container_width=True)
+        with heading:
+            st.markdown(f'**{MONTHS[month.month - 1]} {month.year}**')
+        with following:
+            st.button('›', key=prefix + '_next', help='Næste måned',
+                      on_click=shift_month, args=(month_key, 1), use_container_width=True)
+        for col, label in zip(st.columns(7), ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø']):
+            col.caption(label)
+        for week in calendar.monthcalendar(month.year, month.month):
+            for col, number in zip(st.columns(7), week):
+                if number:
+                    value = month.replace(day=number).isoformat()
+                    col.button(str(number), key=prefix + '_date_' + value,
+                               type='primary' if value in selected else 'secondary',
+                               help=f'{number}. {MONTHS[month.month - 1].lower()} {month.year}',
+                               on_click=toggle_day, args=(days_key, value), use_container_width=True)
+                else:
+                    col.write(' ')
+    return list(selected)
+
+
 def render_editor(store, season, poll=None):
     token = f"{poll['id']}_{poll['version']}" if poll else st.session_state.setdefault('planning_new_id', str(uuid4()))
     poll_id = poll['id'] if poll else token
     prefix = f'planning_edit_{token}'
-    draft_key = prefix + '_draft'
-    chosen_key = prefix + '_chosen'
-    draft = st.session_state.setdefault(draft_key, [s['starts_at'] for s in poll['slots']] if poll else [])
-    st.caption('Tilføj en eller flere datoer. Du kan genbruge tidspunkterne på samme ugedag i flere uger.')
-    day = st.date_input('Dato', value=today(), key=prefix + '_day')
-    times = [f'{hour:02}:{minute:02}' for hour in range(7, 24) for minute in (0, 30)]
-    hours = st.multiselect('Tidspunkter', times, default=['10:00'], key=prefix + '_hours')
-    repeats = st.number_input('Gentag i efterfølgende uger', min_value=0, max_value=20, value=0, key=prefix + '_weeks')
-    if st.button('Tilføj tidspunkter', key=prefix + '_add', use_container_width=True):
-        if not hours:
-            st.warning('Vælg mindst ét tidspunkt.')
+    initial = {}
+    for slot in poll['slots'] if poll else []:
+        value = datetime.fromisoformat(slot['starts_at'])
+        initial.setdefault(value.date().isoformat(), []).append(value.strftime('%H:%M'))
+    title = st.text_input('Navn på forslag / modstander', value=poll['title'] if poll else '',
+                          max_chars=150, key=prefix + '_title')
+    st.markdown('**1. Vælg dage i kalenderen**')
+    st.caption('Tryk på alle de dage, du vil foreslå. Tryk igen for at fjerne en dag. Du kan vælge på tværs af måneder.')
+    selected_days = render_calendar(prefix, sorted(initial))
+    st.markdown(f'**2. Tilføj tidspunkter · {len(selected_days)} valgte dage**')
+    if not selected_days:
+        st.info('Vælg en eller flere dage i kalenderen ovenfor.')
+    chosen = []
+    for day in selected_days:
+        with st.container(border=True):
+            label = time_label({'starts_at': day + 'T00:00'}).split(' kl.')[0]
+            st.markdown(f'**{label}**')
+            times = sorted(set([f'{hour:02}:{minute:02}' for hour in range(24) for minute in (0, 30)] + initial.get(day, [])))
+            hours = st.multiselect('Tidspunkter', times, default=initial.get(day, ['10:00']), key=prefix + '_times_' + day)
+            chosen.extend(f'{day}T{hour}' for hour in hours)
+    st.caption('Svar på uændrede tidspunkter bevares. Nye tidspunkter skal besvares.')
+    use_deadline = st.checkbox('Sæt svarfrist', value=bool(poll and poll.get('deadline')), key=prefix + '_use_deadline')
+    deadline = st.date_input('Sidste svardag', value=date.fromisoformat(poll['deadline']) if poll and poll.get('deadline') else today() + timedelta(days=7), key=prefix + '_deadline')
+    if st.button('Gem ændringer' if poll else 'Udgiv datoer', key=prefix + '_save', use_container_width=True):
+        missing_times = [day for day in selected_days if not any(value.startswith(day + 'T') for value in chosen)]
+        if not title.strip() or not selected_days:
+            st.error('Udfyld et navn og vælg mindst én dag i kalenderen.')
+        elif missing_times:
+            st.error('Tilføj mindst ét tidspunkt til hver valgt dag.')
         else:
-            additions = [f'{day + timedelta(weeks=week)}T{hour}' for week in range(int(repeats) + 1) for hour in hours]
-            merged = sorted(set(draft + additions))
-            if len(merged) > 100:
-                st.warning('Der kan højst være 100 tidspunkter i et forslag.')
-            else:
-                st.session_state[draft_key] = merged
-                st.session_state[chosen_key] = sorted(set(st.session_state.get(chosen_key, draft) + additions))
-                draft = merged
-    st.session_state.setdefault(chosen_key, list(draft))
-    with st.form(prefix + '_form'):
-        title = st.text_input('Navn på forslag / modstander', value=poll['title'] if poll else '', max_chars=150)
-        chosen = st.multiselect('Forslagets datoer og tidspunkter', draft,
-                                format_func=lambda value: time_label({'starts_at': value}), key=chosen_key)
-        st.caption('Fjern et tidspunkt med krydset. Svar på uændrede tidspunkter bevares; nye tidspunkter skal besvares.')
-        use_deadline = st.checkbox('Sæt svarfrist', value=bool(poll and poll.get('deadline')))
-        deadline = st.date_input('Sidste svardag', value=date.fromisoformat(poll['deadline']) if poll and poll.get('deadline') else today() + timedelta(days=7))
-        if st.form_submit_button('Gem ændringer' if poll else 'Udgiv datoer', use_container_width=True):
-            if not title.strip() or not chosen:
-                st.error('Udfyld et navn og tilføj mindst ét tidspunkt.')
-            else:
-                try:
-                    updated = dict(poll or {'status': 'open', 'final_slot': None}, id=poll_id, season_key=season, title=title,
-                                   slots=make_slots(poll_id, chosen), deadline=str(deadline) if use_deadline else None)
-                    if updated.get('final_slot') and updated['final_slot'] not in {s['id'] for s in updated['slots']}:
-                        st.error('Genåbn forslaget, før du fjerner den fastlagte kampdato.')
-                    else:
-                        store.save_poll(updated)
-                        if not poll:
-                            st.session_state.pop('planning_new_id', None)
-                            st.session_state['planning_show_create'] = False
-                        receipt('Forslaget er gemt. Holdet kan nu se datoerne.')
-                except FinesError:
-                    mutation_error()
+            try:
+                updated = dict(poll or {'status': 'open', 'final_slot': None}, id=poll_id, season_key=season, title=title,
+                               slots=make_slots(poll_id, chosen), deadline=str(deadline) if use_deadline else None)
+                if updated.get('final_slot') and updated['final_slot'] not in {s['id'] for s in updated['slots']}:
+                    st.error('Genåbn forslaget, før du fjerner den fastlagte kampdato.')
+                else:
+                    store.save_poll(updated)
+                    if not poll:
+                        st.session_state.pop('planning_new_id', None)
+                        st.session_state['planning_show_create'] = False
+                    receipt('Forslaget er gemt. Holdet kan nu se datoerne.')
+            except FinesError:
+                mutation_error()
 
 
 def render_votes(store, poll, votes, players):

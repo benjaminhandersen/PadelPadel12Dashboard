@@ -1,4 +1,5 @@
 import copy
+from datetime import date
 import unittest
 from unittest.mock import Mock, patch
 from uuid import uuid4
@@ -127,19 +128,46 @@ class PlanningTests(unittest.TestCase):
             self.assertEqual(rows[0]['no'], ['Anna'])
             self.assertEqual(rows[0]['pending'], ['Bo'])
 
-    def test_create_without_captain_code_and_repeat_dates(self):
+    @patch('planning_ui.today', return_value=date(2027, 1, 1))
+    def test_create_from_calendar_across_months_with_individual_times(self, _today):
         store = FakeStore()
         with patch('planning_ui.PlanningStore', return_value=store):
             app = self.app().run()
             next(b for b in app.button if b.label == 'Opret dato').click().run()
             self.assertFalse(any('kode' in w.label.lower() for w in app.text_input))
-            next(w for w in app.number_input if w.label == 'Gentag i efterfølgende uger').set_value(2)
-            next(b for b in app.button if b.label == 'Tilføj tidspunkter' and 'planning_edit_' in b.key).click().run()
+            prefix = 'planning_edit_' + app.session_state['planning_new_id']
+            app.button(key=prefix + '_date_2027-01-02').click().run()
+            app.button(key=prefix + '_date_2027-01-05').click().run()
+            app.multiselect(key=prefix + '_times_2027-01-02').set_value(['10:00', '14:00']).run()
+            app.button(key=prefix + '_next').click().run()
+            app.button(key=prefix + '_date_2027-02-03').click().run()
+            app.multiselect(key=prefix + '_times_2027-02-03').set_value(['18:30']).run()
+            app.button(key=prefix + '_prev').click().run()
+            self.assertEqual(app.multiselect(key=prefix + '_times_2027-01-02').value, ['10:00', '14:00'])
             next(w for w in app.text_input if w.label == 'Navn på forslag / modstander').set_value('Ny kamp')
             next(b for b in app.button if b.label == 'Udgiv datoer').click().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(store.state['polls']), 2)
-            self.assertEqual(len(store.state['polls'][-1]['slots']), 3)
+            self.assertEqual([s['starts_at'] for s in store.state['polls'][-1]['slots']],
+                             ['2027-01-02T10:00', '2027-01-02T14:00', '2027-01-05T10:00', '2027-02-03T18:30'])
+
+    @patch('planning_ui.today', return_value=date(2027, 1, 1))
+    def test_calendar_deselection_and_missing_time_validation(self, _today):
+        store = FakeStore()
+        with patch('planning_ui.PlanningStore', return_value=store):
+            app = self.app().run()
+            next(b for b in app.button if b.label == 'Opret dato').click().run()
+            prefix = 'planning_edit_' + app.session_state['planning_new_id']
+            app.button(key=prefix + '_date_2027-01-02').click().run()
+            app.button(key=prefix + '_date_2027-01-05').click().run()
+            app.button(key=prefix + '_date_2027-01-02').click().run()
+            self.assertEqual(app.session_state[prefix + '_days'], ['2027-01-05'])
+            app.multiselect(key=prefix + '_times_2027-01-05').set_value([]).run()
+            app.text_input(key=prefix + '_title').set_value('Ny kamp')
+            app.button(key=prefix + '_save').click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any('hver valgt dag' in error.value for error in app.error))
+            self.assertEqual(len(store.state['polls']), 1)
 
     def test_finalized_poll_disables_answers(self):
         store = FakeStore()
