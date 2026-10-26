@@ -58,3 +58,11 @@ class StrengthTests(unittest.TestCase):
             self.assertEqual([r['court'] for r in rows],[1,3,1,2,3,None])
         raw[0]['Settings']['MatchOrder']=99
         self.assertTrue(all(r['court'] is None for r in parse_individual_matches(raw,1,True)))
+
+    def test_pair_court_counts_keep_wins_and_losses_separate(self):
+        df=pd.DataFrame([match(1,2,1),match(2,1,1,False),match(1,2,3),match(1,2,None)])
+        row=pair_history(df).iloc[0]
+        self.assertEqual((row['court_1_wins'],row['court_1_played']),(1,2))
+        self.assertEqual((row['court_2_wins'],row['court_2_played']),(0,0))
+        self.assertEqual((row['court_3_wins'],row['court_3_played']),(1,1))
+        self.assertEqual(row['played'],4)

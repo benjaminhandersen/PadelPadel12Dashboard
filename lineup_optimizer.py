@@ -102,6 +102,11 @@ def pair_history(individual: pd.DataFrame) -> pd.DataFrame:
     stats["pair_score"] = ((stats["performance"] + 4 * baseline) / (stats["played"] + 4)).round(2)
     stats["losses"] = stats["played"] - stats["wins"]
     stats["win_pct"] = (stats["wins"] / stats["played"] * 100).round(1)
+    for court in (1, 2, 3):
+        on_court = df[df.get("court", pd.Series(index=df.index, dtype=float)) == court]
+        counts = on_court.groupby("pair_key")["won"].agg(["count", "sum"])
+        stats[f"court_{court}_played"] = stats["pair_key"].map(counts["count"]).fillna(0).astype(int)
+        stats[f"court_{court}_wins"] = stats["pair_key"].map(counts["sum"]).fillna(0).astype(int)
     return stats.drop(columns="performance").sort_values("pair_score", ascending=False).reset_index(drop=True)
 
 

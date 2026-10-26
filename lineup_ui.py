@@ -4,6 +4,50 @@ from html import escape
 import streamlit as st
 
 
+# Decorative court markings; player names remain selectable, accessible HTML.
+COURT_LINES = ('<svg class="lp-court-lines" viewBox="0 0 400 200" preserveAspectRatio="none" '
+               'aria-hidden="true" focusable="false">'
+               '<rect x="10" y="10" width="380" height="180" fill="none"/>'
+               '<path d="M10 50H390 M10 150H390 M200 10V100 M200 100V190"/>'
+               '<path class="lp-net" d="M10 100H390"/></svg>')
+
+
+def _rounds_html(row, history_by_pair, selected_names):
+    parts = ['<div class="lp-rounds">']
+    for round_number in (1, 2):
+        playing = set()
+        parts.append(f'<div class="lp-round"><div class="lp-round-title"><span class="lp-round-number">{round_number}</span>Runde {round_number}</div>')
+        for pair_number in (1, 2, 3):
+            names = str(row[f'Round {round_number} - Par {pair_number}']).split(' & ')
+            playing.update(names)
+            parts.append(f'<div class="lp-pair"><div class="lp-court">{COURT_LINES}'
+                         f'<div class="lp-label">Bane {pair_number}</div><div class="lp-partners">')
+            for name in names:
+                initials = ''.join(part[0] for part in name.split()[:2]).upper()
+                parts.append(f'<div class="lp-player"><span class="lp-avatar">{escape(initials)}</span><span>{escape(name)}</span></div>')
+            parts.append('</div></div><div class="lp-details">')
+            pair_history = history_by_pair.get(frozenset(names))
+            if pair_history is not None and pair_history['played'] > 0:
+                pct = f'{float(pair_history["win_pct"]):g}'.replace('.', ',')
+                parts.append(f'<div class="lp-history">{int(pair_history["wins"])} sejre / {int(pair_history["played"])} kampe sammen · <b>{pct} % vundet</b></div>')
+                court_counts = ''.join(
+                    f'<span>Bane {court}: <b>{int(pair_history.get(f"court_{court}_wins", 0))}/{int(pair_history.get(f"court_{court}_played", 0))}</b></span>'
+                    for court in (1, 2, 3))
+                parts.append(f'<div class="lp-court-counts">{court_counts}</div>'
+                             '<div class="lp-count-caption">Sejre / kampe på hver bane</div>')
+            else:
+                parts.append('<div class="lp-history lp-new">Har ikke spillet sammen endnu – vurderet ud fra individuelle scores</div>')
+            strength = row.get(f'Round {round_number} - Par {pair_number} score')
+            if strength is not None:
+                parts.append(f'<div class="lp-history">Vurderet styrke: <b>{strength:g}</b></div>')
+            parts.append('</div></div>')
+        bench = sorted(set(selected_names) - playing)
+        label = escape(' · '.join(bench)) if bench else 'Ingen – alle valgte spillere er på banen'
+        parts.append(f'<div class="lp-bench"><b>Sidder over:</b> {label}</div></div>')
+    parts.append('</div>')
+    return ''.join(parts)
+
+
 def render_lineup_suggestions(results, history, selected_names):
     if results.empty:
         st.info('Ingen forslag til de valgte spillere.')
@@ -28,7 +72,33 @@ def render_lineup_suggestions(results, history, selected_names):
     .lineup-view .lp-round{background:#fff;color:#17283e;border:1px solid #dfe7ec;border-radius:20px;padding:20px;min-width:0}
     .lineup-view .lp-round-title{display:flex;gap:10px;align-items:center;font-size:20px;font-weight:800;margin-bottom:16px}
     .lineup-view .lp-round-number{background:#e4f4ed;color:#176647;display:grid;place-items:center;width:34px;height:34px;border-radius:10px}
-    .lineup-view .lp-pair{background:#f4f7fa;border:1px solid #e3eaf0;border-radius:15px;padding:16px;margin:12px 0}
+    .lineup-view .lp-pair{margin:14px 0;border:1px solid #dfe7ec;background:#f4f7fa;overflow:hidden}
+    .lineup-view .lp-court{position:relative;background:linear-gradient(140deg,#176673,#154454);min-height:180px;padding:20px;color:white;display:flex;flex-direction:column;justify-content:space-between}
+    .lineup-view .lp-court-lines{position:absolute;inset:0;width:100%;height:100%;stroke:#c8eee3;stroke-width:1.5;opacity:.65;pointer-events:none}
+    .lineup-view .lp-net{stroke:white;stroke-width:3;stroke-dasharray:3 2}
+    .lineup-view .lp-partners{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+    .lineup-view .lp-court .lp-label{position:relative;color:#e0f8f0;letter-spacing:2px;text-align:center;margin:0}
+    .lineup-view .lp-court .lp-player{flex-direction:column;align-items:center;text-align:center;line-height:1.3;font-size:15px;gap:6px;margin:0;min-width:0}
+    .lineup-view .lp-court .lp-player>span:last-child{background:#164b58;padding:2px 5px;max-width:100%}
+    .lineup-view .lp-details{padding:0 12px 10px}
+    .lineup-view .lp-details .lp-history{margin-top:8px;padding-top:6px;border:0}
+    .lineup-view .lp-court-counts{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:12px;color:#254b56;margin-top:6px}
+    .lineup-view .lp-count-caption{font-size:10px;color:#526678;margin-top:4px}
+    .lineup-view .lp-comparison{border:1px solid #dfe7ec;border-radius:14px;padding:14px;margin:0 0 20px;background:#f4f7fa;color:#17283e}
+    .lineup-view .lp-comparison .lp-hero{padding:14px 18px;margin:0 0 12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .lineup-view .lp-comparison .lp-title{font-size:18px;margin:3px 0}
+    .lineup-view .lp-comparison .lp-kicker{font-size:10px}
+    .lineup-view .lp-comparison .lp-score{text-align:right;font-size:12px;color:#d4e5ea}
+    .lineup-view .lp-comparison .lp-score strong{font-size:23px;color:white;display:block}
+    .lineup-view .lp-comparison .lp-round{padding:12px;border-radius:10px}
+    .lineup-view .lp-comparison .lp-round-title{font-size:16px;margin-bottom:8px}
+    .lineup-view .lp-comparison .lp-round-number{width:26px;height:26px}
+    .lineup-view .lp-comparison .lp-pair{margin:8px 0}
+    .lineup-view .lp-comparison .lp-court{min-height:145px;padding:14px}
+    .lineup-view .lp-comparison .lp-player{font-size:13px}
+    .lineup-view .lp-comparison .lp-avatar{width:25px;height:25px;font-size:9px}
+    .lineup-view .lp-comparison .lp-history{font-size:11px;line-height:1.4}
+    .lineup-view .lp-comparison .lp-bench{font-size:11px;margin-top:8px}
     .lineup-view .lp-label{font-size:11px;letter-spacing:1.5px;color:#576779;text-transform:uppercase;font-weight:750;margin-bottom:12px}
     .lineup-view .lp-player{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;margin:8px 0;overflow-wrap:anywhere}
     .lineup-view .lp-avatar{display:grid;place-items:center;background:white;border:1px solid #dfe7ec;width:33px;height:33px;border-radius:50%;font-size:11px;font-weight:800;color:#176647;flex-shrink:0}
@@ -52,31 +122,9 @@ def render_lineup_suggestions(results, history, selected_names):
              f'<div class="lp-stat"><strong>{row["Score"]:g}</strong><span>Opstillingsscore</span></div>'
              f'<div class="lp-stat"><strong>{int(row["Historiske sejre"])}</strong><span>Sejre med disse par</span></div>'
              f'<div class="lp-stat"><strong>{int(row["Historiske par-kampe"])}</strong><span>Fælles kampe i data</span></div>'
-             '</div></div><div class="lp-rounds">']
-    for round_number in (1, 2):
-        playing = set()
-        parts.append(f'<div class="lp-round"><div class="lp-round-title"><span class="lp-round-number">{round_number}</span>Runde {round_number}</div>')
-        for pair_number in (1, 2, 3):
-            names = str(row[f'Round {round_number} - Par {pair_number}']).split(' & ')
-            playing.update(names)
-            parts.append(f'<div class="lp-pair"><div class="lp-label">Bane {pair_number}</div>')
-            for name in names:
-                initials = ''.join(part[0] for part in name.split()[:2]).upper()
-                parts.append(f'<div class="lp-player"><span class="lp-avatar">{escape(initials)}</span><span>{escape(name)}</span></div>')
-            pair_history = history_by_pair.get(frozenset(names))
-            if pair_history is not None and pair_history['played'] > 0:
-                pct = f'{float(pair_history["win_pct"]):g}'.replace('.', ',')
-                parts.append(f'<div class="lp-history">{int(pair_history["wins"])} sejre / {int(pair_history["played"])} kampe sammen · <b>{pct} % vundet</b></div>')
-            else:
-                parts.append('<div class="lp-history lp-new">Har ikke spillet sammen endnu – vurderet ud fra individuelle scores</div>')
-            strength = row.get(f'Round {round_number} - Par {pair_number} score')
-            if strength is not None:
-                parts.append(f'<div class="lp-history">Vurderet styrke: <b>{strength:g}</b></div>')
-            parts.append('</div>')
-        bench = sorted(set(selected_names) - playing)
-        label = escape(' · '.join(bench)) if bench else 'Ingen – alle valgte spillere er på banen'
-        parts.append(f'<div class="lp-bench"><b>Sidder over:</b> {label}</div></div>')
-    parts.append('</div><div class="lp-section">Fordeling af spilletid</div><div class="lp-workload">')
+             '</div></div>']
+    parts.append(_rounds_html(row, history_by_pair, selected_names))
+    parts.append('<div class="lp-section">Fordeling af spilletid</div><div class="lp-workload">')
     for column, label in [('Spiller 2 kampe', 'Spiller begge runder'), ('Spiller 1 kamp', 'Spiller én runde'), ('Spiller 0 kampe', 'Sidder over begge runder')]:
         names = [name.strip() for name in str(row.get(column, '')).split(',') if name.strip()]
         parts.append(f'<div class="lp-work-card"><strong>{label}</strong>')
@@ -98,11 +146,23 @@ def render_lineup_suggestions(results, history, selected_names):
                  'Opstillingsscoren er summen af de seks parvurderinger plus 5 % af spillerscoren pr. deltagelse. '
                  'Vægtene er heuristiske og bruger den valgte sæsons data.')
     with st.expander('Sammenlign alle forslag'):
-        st.dataframe(results.rename(columns={f'Round {r} - Par {p}{suffix}': f'Runde {r} · Bane {p}{label}' for r in (1, 2) for p in (1, 2, 3) for suffix, label in (('', ''), (' score', ' styrke'))}), use_container_width=True, hide_index=True)
+        comparisons = ['<div class="lineup-view">']
+        for index, (_, proposal) in enumerate(results.iterrows()):
+            title = 'Anbefalet opstilling' if index == 0 else f'Alternativ {index}'
+            active = ' · Vises ovenfor' if index == selected else ''
+            comparisons.append('<section class="lp-comparison">'
+                               '<div class="lp-hero"><div><div class="lp-kicker">'
+                               f'Forslag {index + 1}{active}</div><div class="lp-title">{title}</div></div>'
+                               f'<div class="lp-score"><strong>{proposal["Score"]:g}</strong>Opstillingsscore</div></div>')
+            comparisons.append(_rounds_html(proposal, history_by_pair, selected_names))
+            comparisons.append('</section>')
+        comparisons.append('</div>')
+        st.markdown(''.join(comparisons), unsafe_allow_html=True)
     with st.expander('Se makkerparrenes historik'):
         if history.empty:
             st.info('Ingen makkerpar-historik for de valgte spillere endnu.')
         else:
             labels = {'pair': 'Makkerpar', 'played': 'Kampe', 'wins': 'Vundet', 'losses': 'Tabt',
                       'win_pct': 'Vundet %', 'games_diff': 'Games±', 'pair_score': 'Vurderet styrke'}
+            labels.update({f'court_{court}_{metric}': f'Bane {court} · {label}' for court in (1, 2, 3) for metric, label in (('wins', 'Sejre'), ('played', 'Kampe'))})
             st.dataframe(history.drop(columns=['pair_key'], errors='ignore').rename(columns=labels), use_container_width=True, hide_index=True)

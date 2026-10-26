@@ -13,7 +13,7 @@ results=suggest_two_round_lineups(range(1,7),players,pd.DataFrame(),max_results=
 render_lineup_suggestions(results,pd.DataFrame(),players['name'].tolist())
 ''').run()
         self.assertFalse(app.exception)
-        text = '\n'.join(item.value for item in app.markdown)
+        text = app.markdown[0].value
         self.assertIn('Runde 1', text)
         self.assertIn('Runde 2', text)
         self.assertEqual(text.count('>Bane 1</div>'), 2)
@@ -21,6 +21,22 @@ render_lineup_suggestions(results,pd.DataFrame(),players['name'].tolist())
         self.assertIn('Stærkeste vurderede par', app.caption[0].value)
         self.assertEqual(text.count('Har ikke spillet sammen endnu – vurderet ud fra individuelle scores'), 6)
         self.assertIn('alle valgte spillere er på banen', text)
+        comparison = app.markdown[-1].value
+        self.assertEqual(comparison.count('<section class="lp-comparison">'), 2)
+        self.assertEqual(comparison.count('<svg class="lp-court-lines"'), 12)
+        self.assertIn('Vises ovenfor', comparison)
         app.selectbox[0].set_value(1).run()
         self.assertFalse(app.exception)
         self.assertIn('Alternativ 1', '\n'.join(item.value for item in app.markdown))
+
+    def test_known_pair_court_history_and_html_escaping(self):
+        from lineup_ui import _rounds_html
+        row = {f'Round {r} - Par {p}': '<Anna> & Bo' for r in (1, 2) for p in (1, 2, 3)}
+        history = {frozenset(['<Anna>', 'Bo']): dict(played=3, wins=2, win_pct=66.7,
+                   court_1_played=2, court_1_wins=1, court_2_played=1, court_2_wins=1)}
+        html = _rounds_html(row, history, ['<Anna>', 'Bo', '<script>'])
+        self.assertIn('Bane 1: <b>1/2</b>', html)
+        self.assertIn('Bane 2: <b>1/1</b>', html)
+        self.assertIn('Bane 3: <b>0/0</b>', html)
+        self.assertNotIn('<script>', html)
+        self.assertIn('&lt;Anna&gt;', html)

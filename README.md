@@ -184,3 +184,5 @@ Kendte pars fælles resultater blandes med individvurderingen, der vægter som
 fire kampe. Uden individuel historik bruges 50. Den samlede opstillingsscore
 er summen af seks parvurderinger plus 5 % af spillerscoren pr. deltagelse.
 Vægtene er heuristiske, ikke en beregnet vinderchance; kun valgt sæsons data bruges.
+
+Holdforslag og den kompakte sammenligning viser makkerpar på tegnede padelbaner med net. Kendte par viser sejre/kampe fordelt på bane 1, 2 og 3; ukendt bane indgår kun i den samlede historik. Nye par markeres fortsat tydeligt.
