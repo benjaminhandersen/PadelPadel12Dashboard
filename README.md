@@ -42,16 +42,56 @@ streamlit run dashboard.py
 Find fanen **Bødekassen** i dashboardet, eller brug den separate side i menuen
 (den virker også, hvis Rankedin er utilgængelig). Vælg bødetype og tryk på en
 spiller. Overblik viser stillingen; Historik giver fortryd/gendan og CSV-eksport.
-Indstillinger lader jer tilføje spillere og ændre satser for fremtidige bøder.
-Spillernavne og satser følger inspirationsarket; historiske beløb er ikke importeret.
+Indstillinger lader jer ændre satser for fremtidige bøder.
+Spillere hentes fra Rankedin (holdopstilling og holdets kampe i valgt sæson).
+Spillere kan ikke tilføjes manuelt. Uden spillerdata blokeres nye bøder,
+mens overblik og historik bevares, også for tidligere spillere.
+Satser følger inspirationsarket. Den 26. oktober 2026 blev 31 registreringer
+importeret i Supabase: 58 aktive bøder på 1.310 kr. og 6 annullerede registreringer.
+Historiske antal bevares samlet, og ukendte datoer vises som ukendte.
 
-SQLite gemmer registreringer på serveren i `data/fines.sqlite3`, uden for Git.
-Sæt eventuelt `PADEL_FINES_DB` til en fil på et vedvarende drev. Alle brugere af
-samme server deler kassen. Streamlit Clouds lokale disk er ikke varig lagring;
-en ekstern database skal tilsluttes før drift med rigtige fælles data dér.
-Der er endnu ingen login- eller rollebegrænsning: alle med appadgang kan ændre
-bødekassen. Bødesaldo er tildelte bøder, ikke registrerede indbetalinger.
-Kassen er fælles på tværs af sæsonvalg.
+Bødekassen gemmes fælles og varigt i Supabase. Brug din egen holdkonto under
+**Opret konto**, bekræft e-mailen, og log ind. En konto giver kun adgang, når
+dens bekræftede e-mail er godkendt i `padel_members`. Kun administratoren må
+ændre satser og synkronisere spillerlisten; holdmedlemmer må give og fortryde
+bøder. Ingen offentlig læse- eller skriveadgang. Registreringers beløb kan ikke
+ændres fra appen, og eksisterende beløb bevares ved satsændringer.
+
+`supabase_public.json` indeholder kun projektets URL og en **publishable key**,
+som er beregnet til offentlige klienter. Ingen service-nøgle bruges. RLS og
+brugerens Supabase-login beskytter alle data. URL/nøgle kan tilsidesættes med
+`SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` eller følgende Streamlit Secrets:
+
+```toml
+[supabase]
+url = "https://DIT-PROJEKT.supabase.co"
+publishable_key = "sb_publishable_..."
+```
+
+Administratoradgang tildeles af projektejeren i Supabase, eksempelvis:
+
+```sql
+insert into public.padel_members(email, role)
+values ('spiller@example.com', 'member')
+on conflict(email) do update set role=excluded.role;
+```
+
+Sæt **Authentication → URL Configuration → Site URL** til onlineappens URL,
+så bekræftelseslinks fører tilbage til appen. Supabases standard-mailservice
+har begrænsninger; almindelig holdtilmelding kræver egen SMTP eller en
+konfigureret OAuth-udbyder. Der sendes ikke invitationer automatisk ved godkendelse.
+Login gemmes kun i den enkelte Streamlit-session; genindlæsning kan kræve nyt login.
+
+SQL-versioner ligger i `supabase/migrations`. Importforberedelse køres med
+`python prepare_fines_import.py` mod de lokale filer i `data/`; det skriver
+kun en SQL-fil. Importens kilde-id'er forhindrer dubletter ved gentagelse.
+Personlige importdata ligger uden for Git. Kontrollér altid spillermapping
+og totalsum før import. Fremtidige registreringer skal ske i appen; arket
+synkroniseres ikke løbende.
+
+Til lokale tests kan `PADEL_FINES_DB` pege på en separat SQLite-fil. Der er
+ingen automatisk lokal reserve, hvis Supabase fejler. Bødesaldo er tildelte
+bøder, ikke indbetalinger. Kassen er fælles på tværs af sæsonvalg.
 
 Rediger øverst i `padel_pipeline.py`:
 

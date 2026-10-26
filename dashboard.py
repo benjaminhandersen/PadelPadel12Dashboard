@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 from fines_ui import render_fines
+from lineup_optimizer import all_known_players
 
 from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match
 from player_stats import player_set_stats, season_coverage
@@ -190,7 +191,7 @@ tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availabili
 )
 
 with tab_fines:
-    render_fines()
+    render_fines(all_known_players(individual, lineup).to_dict('records'))
 
 with tab_standings:
     st.subheader("Puljestilling")

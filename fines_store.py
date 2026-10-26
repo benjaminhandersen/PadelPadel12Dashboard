@@ -6,8 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-PLAYERS = ['Benjamin', 'Rasmus H', 'Rasmus B', 'Patrick', 'Kasper', 'Jesper',
-           'Simon', 'Karsten', 'Simon Norlen', 'Iversen']
 RULES = [('Dobbeltfejl', 10), ('For sent til træning', 20), ('For sent til kamp', 50),
          ('Glemt udstyr til træning', 20), ('Glemt udstyr til kamp', 50),
          ('Glemt bat', 100), ('Glemt holdtrøje til kamp', 50),
@@ -22,7 +20,6 @@ def database():
     con.row_factory = sqlite3.Row
     try:
         with con:
-            con.execute('CREATE TABLE IF NOT EXISTS players (name TEXT PRIMARY KEY COLLATE NOCASE)')
             con.execute('CREATE TABLE IF NOT EXISTS rules (name TEXT PRIMARY KEY, amount INTEGER NOT NULL CHECK(amount > 0))')
             con.execute('''CREATE TABLE IF NOT EXISTS fines (
                 id TEXT PRIMARY KEY, created TEXT NOT NULL, player TEXT NOT NULL,
@@ -31,7 +28,6 @@ def database():
             # Seed once, so subsequent rate changes survive restarts.
             con.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY)')
             if not con.execute("SELECT 1 FROM metadata WHERE key='seeded'").fetchone():
-                con.executemany('INSERT OR IGNORE INTO players VALUES (?)', [(p,) for p in PLAYERS])
                 con.executemany('INSERT OR IGNORE INTO rules VALUES (?, ?)', RULES)
                 con.execute("INSERT INTO metadata VALUES ('seeded')")
             yield con
@@ -42,20 +38,19 @@ def database():
 def snapshot():
     with database() as con:
         return {key: [dict(r) for r in con.execute(query)] for key, query in {
-            'players': 'SELECT name FROM players ORDER BY rowid',
             'rules': 'SELECT * FROM rules ORDER BY rowid',
             'fines': 'SELECT * FROM fines ORDER BY created DESC, rowid DESC',
         }.items()}
 
 
-def give_fine(player, reason):
+def give_fine(player, reason, roster, request_id=None):
     with database() as con:
-        if not con.execute('SELECT 1 FROM players WHERE name=?', (player,)).fetchone():
+        if player not in roster:
             raise ValueError('Ukendt spiller')
         rule = con.execute('SELECT amount FROM rules WHERE name=?', (reason,)).fetchone()
         if rule is None:
             raise ValueError('Ukendt bødetype')
-        fine_id = str(uuid4())
+        fine_id = request_id or str(uuid4())
         con.execute('INSERT INTO fines (id, created, player, reason, amount) VALUES (?, ?, ?, ?, ?)',
                     (fine_id, datetime.now(timezone.utc).isoformat(), player, reason, rule['amount']))
         return fine_id, rule['amount']
@@ -64,17 +59,6 @@ def give_fine(player, reason):
 def set_cancelled(fine_id, cancelled):
     with database() as con:
         con.execute('UPDATE fines SET cancelled=? WHERE id=?', (int(bool(cancelled)), fine_id))
-
-
-def add_player(name):
-    name = name.strip()
-    if not name or len(name) > 80:
-        raise ValueError('Indtast et navn på 1–80 tegn')
-    with database() as con:
-        try:
-            con.execute('INSERT INTO players VALUES (?)', (name,))
-        except sqlite3.IntegrityError as exc:
-            raise ValueError('Spilleren findes allerede') from exc
 
 
 def update_rate(reason, amount):

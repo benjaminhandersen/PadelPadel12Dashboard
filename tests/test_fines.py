@@ -18,10 +18,10 @@ class FinesTest(unittest.TestCase):
         self.directory.cleanup()
 
     def test_rate_snapshot_and_cancellation(self):
-        fine_id, amount = store.give_fine('Benjamin', 'Dobbeltfejl')
+        fine_id, amount = store.give_fine('Benjamin', 'Dobbeltfejl', ['Benjamin'])
         self.assertEqual(amount, 10)
         store.update_rate('Dobbeltfejl', 25)
-        self.assertEqual(store.give_fine('Benjamin', 'Dobbeltfejl')[1], 25)
+        self.assertEqual(store.give_fine('Benjamin', 'Dobbeltfejl', ['Benjamin'])[1], 25)
         store.set_cancelled(fine_id, True)
         fines = store.snapshot()['fines']
         self.assertEqual(sum(f['amount'] for f in fines if not f['cancelled']), 25)
@@ -30,15 +30,13 @@ class FinesTest(unittest.TestCase):
 
     def test_validation(self):
         with self.assertRaises(ValueError):
-            store.add_player('benjamin')
-        with self.assertRaises(ValueError):
-            store.give_fine('Ukendt', 'Dobbeltfejl')
+            store.give_fine('Ukendt', 'Dobbeltfejl', ['Benjamin'])
         with self.assertRaises(ValueError):
             store.update_rate('Dobbeltfejl', -5)
 
     def test_ui_give_and_undo(self):
         from streamlit.testing.v1 import AppTest
-        app = AppTest.from_file('pages/2_Boedekasse.py').run()
+        app = AppTest.from_string("from fines_ui import render_fines\nrender_fines(['Benjamin', 'Rankedin Spiller'])").run()
         self.assertFalse(app.exception)
         next(b for b in app.button if b.label.startswith('Dobbeltfejl')).click().run()
         next(b for b in app.button if b.label.endswith('· Benjamin')).click().run()
@@ -50,3 +48,15 @@ class FinesTest(unittest.TestCase):
         next(b for b in app.button if b.label == 'Gendan').click().run()
         self.assertEqual(app.metric[0].value, '10 kr.')
         self.assertFalse(app.exception)
+
+    def test_empty_roster_preserves_history(self):
+        from streamlit.testing.v1 import AppTest
+        store.give_fine('Tidligere spiller', 'Dobbeltfejl', ['Tidligere spiller'])
+        app = AppTest.from_string("from fines_ui import render_fines\nrender_fines([])").run()
+        self.assertTrue(app.warning)
+        self.assertFalse(any(b.label.startswith('+ ') for b in app.button))
+        app.radio[0].set_value('Overblik').run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.dataframe[0].value.iloc[0]['Spiller'], 'Tidligere spiller')
+        app.radio[0].set_value('Indstillinger').run()
+        self.assertFalse(app.text_input)
