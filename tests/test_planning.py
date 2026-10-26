@@ -149,7 +149,7 @@ class PlanningTests(unittest.TestCase):
             self.assertFalse(app.exception)
             self.assertEqual(len(store.state['polls']), 2)
             self.assertEqual([s['starts_at'] for s in store.state['polls'][-1]['slots']],
-                             ['2027-01-02T10:00', '2027-01-02T14:00', '2027-01-05T10:00', '2027-02-03T18:30'])
+                             ['2027-01-02T10:00', '2027-01-02T14:00', '2027-01-05T20:00', '2027-02-03T18:30'])
 
     @patch('planning_ui.today', return_value=date(2027, 1, 1))
     def test_calendar_deselection_and_missing_time_validation(self, _today):

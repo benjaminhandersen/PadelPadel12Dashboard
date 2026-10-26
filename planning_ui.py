@@ -113,7 +113,7 @@ def render_editor(store, season, poll=None):
             label = time_label({'starts_at': day + 'T00:00'}).split(' kl.')[0]
             st.markdown(f'**{label}**')
             times = sorted(set([f'{hour:02}:{minute:02}' for hour in range(24) for minute in (0, 30)] + initial.get(day, [])))
-            hours = st.multiselect('Tidspunkter', times, default=initial.get(day, ['10:00']), key=prefix + '_times_' + day)
+            hours = st.multiselect('Tidspunkter', times, default=initial.get(day, ['20:00']), key=prefix + '_times_' + day)
             chosen.extend(f'{day}T{hour}' for hour in hours)
     st.caption('Svar på uændrede tidspunkter bevares. Nye tidspunkter skal besvares.')
     use_deadline = st.checkbox('Sæt svarfrist', value=bool(poll and poll.get('deadline')), key=prefix + '_use_deadline')
