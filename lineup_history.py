@@ -26,3 +26,28 @@ def load_lineup_history(seasons):
         # A season may be configured twice; never count a match twice.
         history = history.drop_duplicates(subset=['team_match_id', 'match_id']).reset_index(drop=True)
     return history, loaded, warnings
+
+
+def pair_season_stats(history, current_match_ids, min_matches=1, current_players=None):
+    """Totals plus two disjoint period summaries; match identity determines period."""
+    from padel_pipeline import stat_best_pairs
+    if history.empty:
+        return pd.DataFrame()
+    history = history.drop_duplicates(subset=['team_match_id', 'match_id']).copy()
+    names = {}
+    for _, row in history.iterrows():
+        for side in (1, 2):
+            names[int(row[f'our_p{side}_id'])] = row[f'our_p{side}_name']
+    if current_players is not None and not current_players.empty:
+        names.update(dict(zip(current_players['player_id'], current_players['name'])))
+    for side in (1, 2):
+        history[f'our_p{side}_name'] = history[f'our_p{side}_id'].map(names)
+    totals = stat_best_pairs(history, min_matches=min_matches)
+    is_current = history['team_match_id'].isin(set(current_match_ids))
+    for prefix, mask in (('previous', ~is_current), ('current', is_current)):
+        period = stat_best_pairs(history[mask])
+        lookup = {tuple(row['pair_key']): row for _, row in period.iterrows()}
+        for column in ('played', 'wins', 'losses', 'win_pct'):
+            totals[f'{prefix}_{column}'] = totals['pair_key'].map(
+                lambda pair: lookup.get(tuple(pair), {}).get(column, 0))
+    return totals

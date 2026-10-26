@@ -192,3 +192,5 @@ Hovedsiden hedder Holdoverblik i navigationen. Sæsonens nøgletal, næste kamp,
 seneste fem resultater og puljestilling vises grafisk. Spillere, makkerpar og
 kampe har responsive kort; detaljerede tabeller kan fortsat åbnes.
 Oversigten bruger den valgte sæson, mens Holdforslag bruger alle tilføjede sæsoner.
+
+Makkerparstatistikken bruger alle tilføjede sæsoner. Hvert kort viser samlet statistik samt Tidligere sæsoner og Indeværende sæson hver for sig. Indeværende følger sæsonvalget; tidligere samler de øvrige sæsoner. Minimumsfilteret gælder samlet antal kampe.

@@ -15,6 +15,7 @@ STYLE = '''<style>
 .team-view .tv-metric{border-left:2px solid #75c5ae;padding-left:14px}
 .team-view .tv-metric strong{font-size:28px;display:block;color:white}.team-view .tv-metric span{font-size:12px;color:#d4e5ea}
 .team-view .tv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:12px 0 22px}
+.team-view .tv-pair-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .team-view .tv-highlights{grid-template-columns:repeat(2,minmax(0,1fr))}
 .team-view .tv-card{background:#fff;color:#17283e;border:1px solid #dfe7ec;border-radius:16px;padding:20px;min-width:0;overflow-wrap:anywhere}
 .team-view .tv-kicker{color:#436674;font-size:11px;font-weight:750;letter-spacing:1.2px;text-transform:uppercase}
@@ -30,6 +31,7 @@ STYLE = '''<style>
 .team-view .tv-small{font-size:11px;color:#526678;line-height:1.5}.team-view .tv-points{text-align:right;font-size:20px;font-weight:800}.team-view .tv-points small{display:block;font-size:10px;font-weight:500;color:#526678}
 .team-view .tv-person{display:flex;gap:12px;align-items:center;margin-bottom:16px}.team-view .tv-avatar{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:#e4f4ed;color:#176647;font-size:12px;font-weight:800}
 .team-view .tv-person strong{font-size:16px;overflow-wrap:anywhere}.team-view .tv-numbers{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-top:14px;color:#526678}.team-view .tv-numbers b{font-size:20px;display:block;color:#17283e}
+.team-view .tv-period{border-top:1px solid #dfe7ec;padding-top:10px;margin-top:10px;display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:1.6;flex-wrap:wrap}.team-view .tv-period strong{color:#254b56}.team-view .tv-period span{color:#526678}
 .team-view .tv-bar{height:7px;background:#edf1f5;border-radius:8px;overflow:hidden;margin-top:16px}.team-view .tv-bar span{height:100%;background:#359578;display:block}
 .team-view .tv-result{font-size:32px;font-weight:800;margin:12px 0;color:#17283e}.team-view .tv-separator{color:#9aabb7;padding:0 7px}
 @media(max-width:900px){.team-view .tv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -137,10 +139,18 @@ def render_pair_cards(pairs):
     cards=[]
     for index,(_,r) in enumerate(pairs.iterrows(),1):
         pct=float(r['win_pct'])
+        periods=[]
+        for prefix, label in (('previous','Tidligere sæsoner'), ('current','Indeværende sæson')):
+            played=int(r.get(f'{prefix}_played',0))
+            wins=int(r.get(f'{prefix}_wins',0))
+            losses=int(r.get(f'{prefix}_losses',0))
+            percentage=float(r.get(f'{prefix}_win_pct',0))
+            summary=(f'{played} {"kamp" if played == 1 else "kampe"} · {wins} V / {losses} T · {percentage:g} %' if played else 'Ingen kampe sammen')
+            periods.append(f'<div class="tv-period"><strong>{label}</strong><span>{summary}</span></div>')
         cards.append(f'<article class="tv-card"><div class="tv-kicker">Makkerpar · #{index}</div><h3>{_text(r["pair_name"])}</h3>'
                      f'<div class="tv-numbers"><span><b>{_number(r["played"])}</b>Kampe sammen</span><span><b>{_number(r["wins"])}</b>Sejre</span><span><b>{pct:g} %</b>Vundet</span></div>'
-                     f'<div class="tv-bar"><span style="width:{max(0,min(100,pct))}%"></span></div></article>')
-    _render('<div class="tv-grid">'+''.join(cards)+'</div>')
+                     f'<div class="tv-bar"><span style="width:{max(0,min(100,pct))}%"></span></div>' + ''.join(periods) + '</article>')
+    _render('<div class="tv-grid tv-pair-grid">'+''.join(cards)+'</div>')
 
 
 def render_fixture_cards(matches, played=False):

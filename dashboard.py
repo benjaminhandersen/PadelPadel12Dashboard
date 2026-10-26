@@ -5,11 +5,12 @@ import streamlit as st
 from fines_ui import render_fines
 from fines_connection import require_app_login
 from lineup_optimizer import all_known_players
+from lineup_history import load_lineup_history, pair_season_stats
 from navigation import render_navigation
 from dashboard_ui import (render_team_header, render_season_highlights, render_standings,
                           render_player_cards, render_pair_cards, render_fixture_cards)
 
-from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match
+from padel_pipeline import build_dataset, stat_per_match
 from player_stats import player_set_stats, season_coverage
 from app_config import load_config, get_active_season, set_active_season, upsert_season
 
@@ -155,6 +156,11 @@ def load_data(team_id: int, pool_id: int, cache_version: int):
     return build_dataset(team_id, pool_id)
 
 
+@st.cache_data(ttl=60 * 15)
+def load_pair_history(seasons, cache_version):
+    return load_lineup_history(seasons)
+
+
 with st.spinner("Henter data fra Rankedin..."):
     try:
         data = load_data(team_id, pool_id, DATA_CACHE_VERSION)
@@ -242,11 +248,23 @@ with tab_players:
 with tab_pairs:
     st.subheader("Bedste makkerpar")
     min_matches = st.slider("Minimum antal kampe", 1, 10, 1)
-    pairs = stat_best_pairs(individual, min_matches=min_matches)
+    st.caption(f"Alle tilføjede sæsoner tæller med. Indeværende sæson: {season_name}. Tidligere sæsoner samler de øvrige sæsoner. Minimum antal kampe gælder samlet.")
+    with st.spinner("Henter makkerhistorik fra alle sæsoner..."):
+        pair_history, pair_seasons, pair_warnings = load_pair_history(seasons, DATA_CACHE_VERSION)
+    for warning in pair_warnings:
+        st.warning(warning)
+    if pair_warnings:
+        st.warning("Makkerparstatistikken er ufuldstændig; nogle historiske kampe kunne ikke indlæses.")
+    current_match_ids = team_matches["team_match_id"].tolist() if not team_matches.empty else []
+    pairs = pair_season_stats(pair_history, current_match_ids, min_matches, all_known_players(individual, lineup))
     if pairs.empty:
         st.info(f"Ingen makkerpar med mindst {min_matches} kampe endnu.")
     else:
-        show = pairs.rename(columns={"pair_name": "Par", "played": "Sp", "wins": "V", "losses": "T", "win_pct": "Win %"})[["Par", "Sp", "V", "T", "Win %"]]
+        show = pairs.rename(columns={"pair_name": "Par", "played": "Sp", "wins": "V", "losses": "T", "win_pct": "Win %",
+            **{f"{prefix}_{metric}": f"{label} · {title}"
+               for prefix, label in (("previous", "Tidligere sæsoner"), ("current", "Indeværende sæson"))
+               for metric, title in (("played", "Kampe"), ("wins", "Sejre"), ("losses", "Tabte"), ("win_pct", "Vundet %"))}
+        }).drop(columns=["pair_key"])
         render_pair_cards(pairs)
         with st.expander("Se makkerpar som tabel"):
             st.dataframe(show, use_container_width=True, hide_index=True)

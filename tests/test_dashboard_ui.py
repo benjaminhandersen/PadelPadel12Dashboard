@@ -17,7 +17,7 @@ def sample_data():
 class TeamOverviewTests(unittest.TestCase):
     def test_full_dashboard_preserves_tabs_navigation_and_details(self):
         config=dict(active_season='test',seasons={'test':dict(team_id=1,pool_id=1,label='Testsæson')})
-        with patch('fines_connection.require_app_login',return_value=None), patch('fines_ui.render_fines'), patch('padel_pipeline.build_dataset',return_value=sample_data()), patch('app_config.load_config',return_value=config):
+        with patch('fines_connection.require_app_login',return_value=None), patch('fines_ui.render_fines'), patch('padel_pipeline.build_dataset',return_value=sample_data()), patch('app_config.load_config',return_value=config), patch('lineup_history.load_lineup_history',return_value=(sample_data()['individual'], ['Testsæson'], [])):
             app=AppTest.from_file('dashboard.py').run()
         self.assertFalse(app.exception)
         self.assertEqual([t.label for t in app.tabs],['Overblik','Spillere','Makkerpar','Resultater','Kampprogram','Tilgængelighed','Bødekassen'])
@@ -26,6 +26,9 @@ class TeamOverviewTests(unittest.TestCase):
         self.assertIn('Næste kamp',html)
         self.assertIn('&lt;Modstander&gt;',html)
         self.assertIn('Uafgjort',html)
+        self.assertIn('Tidligere sæsoner',html)
+        self.assertIn('Indeværende sæson',html)
+        self.assertIn('Ingen kampe sammen',html)
         self.assertTrue(app.dataframe)
 
     def test_empty_season_and_missing_results(self):
