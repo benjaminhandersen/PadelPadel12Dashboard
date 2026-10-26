@@ -170,3 +170,17 @@ padel_dashboard/
 Rankedins Terms of Use begrænser systematisk download af deres indhold.
 Kontakt support@rankedin.com og bed om officiel tilladelse hvis dashboardet
 skal bruges kommercielt eller til andet end privat klubbrug.
+
+### Holdforslagenes styrkevurdering
+Forslagene sorterer hvert rundes tre par efter vurderet styrke: stærkest på bane 1.
+Hver historisk kamp giver 100 ved sejr eller 0 ved nederlag, plus gameforskel
+begrænset til ±10 og banetillæg +20/0/−20 for bane 1/2/3 (også ved nederlag).
+Baner udledes som en antagelse af Rankedin-kamppladserne 1–3 og 4–6 ved
+MatchOrder=1; manglende/ukendt rækkefølge og en syvende kamp får intet tillæg.
+Uspillede kamppladser bevares ved udledning af banen.
+Spillerscoren er gennemsnittet med to neutrale kampe på 50 som udgangspunkt.
+Nye makkerpar får gennemsnittet af spillernes scores og markeres tydeligt.
+Kendte pars fælles resultater blandes med individvurderingen, der vægter som
+fire kampe. Uden individuel historik bruges 50. Den samlede opstillingsscore
+er summen af seks parvurderinger plus 5 % af spillerscoren pr. deltagelse.
+Vægtene er heuristiske, ikke en beregnet vinderchance; kun valgt sæsons data bruges.

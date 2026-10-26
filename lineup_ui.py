@@ -49,7 +49,7 @@ def render_lineup_suggestions(results, history, selected_names):
              f'<div class="lp-title">{heading}</div>'
              '<div class="lp-intro">2 runder · 3 par i hver runde · ingen gentagne makkerpar</div>'
              '<div class="lp-stats">'
-             f'<div class="lp-stat"><strong>{row["Score"]:g}</strong><span>Historikscore</span></div>'
+             f'<div class="lp-stat"><strong>{row["Score"]:g}</strong><span>Opstillingsscore</span></div>'
              f'<div class="lp-stat"><strong>{int(row["Historiske sejre"])}</strong><span>Sejre med disse par</span></div>'
              f'<div class="lp-stat"><strong>{int(row["Historiske par-kampe"])}</strong><span>Fælles kampe i data</span></div>'
              '</div></div><div class="lp-rounds">']
@@ -59,7 +59,7 @@ def render_lineup_suggestions(results, history, selected_names):
         for pair_number in (1, 2, 3):
             names = str(row[f'Round {round_number} - Par {pair_number}']).split(' & ')
             playing.update(names)
-            parts.append(f'<div class="lp-pair"><div class="lp-label">Par {pair_number}</div>')
+            parts.append(f'<div class="lp-pair"><div class="lp-label">Bane {pair_number}</div>')
             for name in names:
                 initials = ''.join(part[0] for part in name.split()[:2]).upper()
                 parts.append(f'<div class="lp-player"><span class="lp-avatar">{escape(initials)}</span><span>{escape(name)}</span></div>')
@@ -68,7 +68,10 @@ def render_lineup_suggestions(results, history, selected_names):
                 pct = f'{float(pair_history["win_pct"]):g}'.replace('.', ',')
                 parts.append(f'<div class="lp-history">{int(pair_history["wins"])} sejre / {int(pair_history["played"])} kampe sammen · <b>{pct} % vundet</b></div>')
             else:
-                parts.append('<div class="lp-history lp-new">Ingen fælles kampe i data endnu</div>')
+                parts.append('<div class="lp-history lp-new">Har ikke spillet sammen endnu – vurderet ud fra individuelle scores</div>')
+            strength = row.get(f'Round {round_number} - Par {pair_number} score')
+            if strength is not None:
+                parts.append(f'<div class="lp-history">Vurderet styrke: <b>{strength:g}</b></div>')
             parts.append('</div>')
         bench = sorted(set(selected_names) - playing)
         label = escape(' · '.join(bench)) if bench else 'Ingen – alle valgte spillere er på banen'
@@ -83,13 +86,23 @@ def render_lineup_suggestions(results, history, selected_names):
         parts.append('</div>')
     parts.append('</div></div>')
     st.markdown(''.join(parts), unsafe_allow_html=True)
-    st.caption('Historikscoren bruges til at sammenligne forslag. Den bygger på parrenes og spillernes resultater og er ikke en beregnet vinderchance. Par-numrene angiver ikke styrkerækkefølge.')
+    st.caption('Stærkeste vurderede par spiller på bane 1 i hver runde. Styrkeindekset er en vurdering, ikke en vinderchance.')
+    with st.expander('Sådan beregnes styrken'):
+        st.write('Hver kamp giver 100 ved sejr og 0 ved nederlag, plus gameforskel begrænset til ±10. '
+                 'Bane 1 giver +20, bane 2 giver 0 og bane 3 giver −20, også ved nederlag. '
+                 'Banen antages ud fra Rankedin-rækkefølgen: 1–3 i første runde og 1–3 i anden. '
+                 'En eventuel syvende kamp eller ukendt bane får intet banetillæg. '
+                 'Spillerscoren er gennemsnittet med to neutrale kampe på 50 som udgangspunkt. '
+                 'Et nyt par får gennemsnittet af de to spillerscores. Fælles resultater blandes med '
+                 'individvurderingen, der vægter som fire kampe. Spillere uden historik får 50. '
+                 'Opstillingsscoren er summen af de seks parvurderinger plus 5 % af spillerscoren pr. deltagelse. '
+                 'Vægtene er heuristiske og bruger den valgte sæsons data.')
     with st.expander('Sammenlign alle forslag'):
-        st.dataframe(results.rename(columns={f'Round {r} - Par {p}': f'Runde {r} · Par {p}' for r in (1, 2) for p in (1, 2, 3)}), use_container_width=True, hide_index=True)
+        st.dataframe(results.rename(columns={f'Round {r} - Par {p}{suffix}': f'Runde {r} · Bane {p}{label}' for r in (1, 2) for p in (1, 2, 3) for suffix, label in (('', ''), (' score', ' styrke'))}), use_container_width=True, hide_index=True)
     with st.expander('Se makkerparrenes historik'):
         if history.empty:
             st.info('Ingen makkerpar-historik for de valgte spillere endnu.')
         else:
             labels = {'pair': 'Makkerpar', 'played': 'Kampe', 'wins': 'Vundet', 'losses': 'Tabt',
-                      'win_pct': 'Vundet %', 'games_diff': 'Games±', 'pair_score': 'Historikscore'}
+                      'win_pct': 'Vundet %', 'games_diff': 'Games±', 'pair_score': 'Vurderet styrke'}
             st.dataframe(history.drop(columns=['pair_key'], errors='ignore').rename(columns=labels), use_container_width=True, hide_index=True)

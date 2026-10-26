@@ -179,9 +179,11 @@ def parse_individual_matches(
 ) -> list[dict]:
     matches = _rankedin_get(raw[0], "Matches")
     individual = _rankedin_get(matches, "Matches")
+    settings = _rankedin_get(raw[0], "Settings", {})
+    standard_order = _rankedin_get(settings, "MatchOrder", None) == 1
     rows = []
 
-    for sub in individual:
+    for position, sub in enumerate(individual):
         ch, cd = _rankedin_get(sub, "Challenger"), _rankedin_get(sub, "Challenged")
 
         if _rankedin_get(ch, "Player1Id") == 0 or _rankedin_get(cd, "Player1Id") == 0:
@@ -213,6 +215,10 @@ def parse_individual_matches(
         rows.append({
             "team_match_id": team_match_id,
             "match_id": _rankedin_get(sub, "Id"),
+            # Team format: first three slots are round 1, next three round 2.
+            # Preserve unplayed slots; a possible seventh decider has no court.
+            "court": position % 3 + 1 if standard_order and position < 6 else None,
+            "lineup_round": position // 3 + 1 if standard_order and position < 6 else None,
             "date": pd.to_datetime(_rankedin_get(sub, "Date")),
             "our_p1_id": _rankedin_get(our_side, "Player1Id"),
             "our_p1_name": _rankedin_get(our_side, "Name"),

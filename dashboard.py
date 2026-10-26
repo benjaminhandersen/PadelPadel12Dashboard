@@ -15,7 +15,7 @@ fines_backend = require_app_login()
 
 # Bump when the shape or interpretation of build_dataset() changes. Streamlit
 # otherwise keeps results produced by older parser code in its data cache.
-DATA_CACHE_VERSION = 4
+DATA_CACHE_VERSION = 5
 
 
 def fmt_int(value, default="—"):

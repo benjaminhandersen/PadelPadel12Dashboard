@@ -13,7 +13,7 @@ from lineup_optimizer import (
 st.set_page_config(page_title="Holdforslag", page_icon="🎯", layout="wide")
 require_app_login()
 
-DATA_CACHE_VERSION = 4
+DATA_CACHE_VERSION = 5
 
 st.title("🎯 Holdforslag")
 st.caption("2 runder · 3 par pr. runde · samme par kun én gang")

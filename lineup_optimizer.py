@@ -51,86 +51,68 @@ def all_known_players(individual: pd.DataFrame, lineup: pd.DataFrame | None) -> 
     )
 
 
+# Heuristic strength index, not a win probability. Two neutral prior matches
+# limit the effect of tiny samples. Court is inferred by the parser from slots.
+NEUTRAL_SCORE = 50.0
+
+
+def _scored_matches(individual: pd.DataFrame) -> pd.DataFrame:
+    df = individual.copy()
+    courts = df.get("court", pd.Series(index=df.index, dtype=float))
+    bonus = courts.map({1: 20.0, 2: 0.0, 3: -20.0}).fillna(0.0)
+    df["performance"] = (df["won"].astype(float) * 100
+                         + df["games_diff"].clip(-10, 10) + bonus)
+    return df
+
+
 def player_history(individual: pd.DataFrame) -> pd.DataFrame:
+    columns = ["player_id", "name", "played", "wins", "losses", "win_pct", "games_diff", "player_score"]
     if individual is None or individual.empty:
-        return pd.DataFrame(columns=[
-            "player_id", "name", "played", "wins", "losses", "win_pct", "games_diff", "player_score"
-        ])
-
-    p1 = individual[["our_p1_id", "our_p1_name", "won", "games_diff"]].rename(
-        columns={"our_p1_id": "player_id", "our_p1_name": "name"}
-    )
-    p2 = individual[["our_p2_id", "our_p2_name", "won", "games_diff"]].rename(
-        columns={"our_p2_id": "player_id", "our_p2_name": "name"}
-    )
-    per = pd.concat([p1, p2], ignore_index=True)
-
-    stats = (
-        per.groupby(["player_id", "name"])
-        .agg(
-            played=("won", "count"),
-            wins=("won", "sum"),
-            games_diff=("games_diff", "sum"),
-        )
-        .reset_index()
-    )
+        return pd.DataFrame(columns=columns)
+    df = _scored_matches(individual)
+    parts = [df[[f"our_p{i}_id", f"our_p{i}_name", "won", "games_diff", "performance"]]
+             .rename(columns={f"our_p{i}_id": "player_id", f"our_p{i}_name": "name"})
+             for i in (1, 2)]
+    stats = (pd.concat(parts, ignore_index=True).groupby(["player_id", "name"])
+             .agg(played=("won", "count"), wins=("won", "sum"),
+                  games_diff=("games_diff", "sum"), performance=("performance", "sum"))
+             .reset_index())
     stats["losses"] = stats["played"] - stats["wins"]
     stats["win_pct"] = (stats["wins"] / stats["played"] * 100).round(1)
-
-    # Player score is intentionally simple and explainable.
-    stats["player_score"] = (
-        stats["wins"] * 100
-        + stats["win_pct"]
-        + stats["played"] * 5
-        + stats["games_diff"]
-    ).round(1)
-
-    return stats.sort_values(
-        ["player_score", "wins", "games_diff"],
-        ascending=[False, False, False],
-    ).reset_index(drop=True)
+    stats["player_score"] = ((stats["performance"] + 2 * NEUTRAL_SCORE)
+                             / (stats["played"] + 2)).round(2)
+    return stats.drop(columns="performance").sort_values("player_score", ascending=False).reset_index(drop=True)
 
 
 def pair_history(individual: pd.DataFrame) -> pd.DataFrame:
+    columns = ["pair_key", "pair", "played", "wins", "losses", "win_pct", "games_diff", "pair_score"]
     if individual is None or individual.empty:
-        return pd.DataFrame(columns=[
-            "pair_key", "pair", "played", "wins", "losses", "win_pct", "games_diff", "pair_score"
-        ])
-
-    df = individual.copy()
-    df["pair_key"] = df.apply(
-        lambda row: tuple(sorted([int(row["our_p1_id"]), int(row["our_p2_id"])])),
-        axis=1,
-    )
-    df["pair"] = df.apply(
-        lambda row: " & ".join(sorted([row["our_p1_name"], row["our_p2_name"]])),
-        axis=1,
-    )
-
-    stats = (
-        df.groupby(["pair_key", "pair"])
-        .agg(
-            played=("won", "count"),
-            wins=("won", "sum"),
-            games_diff=("games_diff", "sum"),
-        )
-        .reset_index()
-    )
+        return pd.DataFrame(columns=columns)
+    df = _scored_matches(individual)
+    df["pair_key"] = df.apply(lambda r: tuple(sorted([int(r["our_p1_id"]), int(r["our_p2_id"])])), axis=1)
+    df["pair"] = df.apply(lambda r: " & ".join(sorted([r["our_p1_name"], r["our_p2_name"]])), axis=1)
+    stats = (df.groupby(["pair_key", "pair"])
+             .agg(played=("won", "count"), wins=("won", "sum"),
+                  games_diff=("games_diff", "sum"), performance=("performance", "sum"))
+             .reset_index())
+    scores = player_history(individual).set_index("player_id")["player_score"].to_dict()
+    baseline = stats["pair_key"].map(lambda pair: sum(scores.get(p, NEUTRAL_SCORE) for p in pair) / 2)
+    # Four equivalent matches from individuals: zero shared games uses only
+    # individuals; four shared games gives shared performance half the weight.
+    stats["pair_score"] = ((stats["performance"] + 4 * baseline) / (stats["played"] + 4)).round(2)
     stats["losses"] = stats["played"] - stats["wins"]
     stats["win_pct"] = (stats["wins"] / stats["played"] * 100).round(1)
+    return stats.drop(columns="performance").sort_values("pair_score", ascending=False).reset_index(drop=True)
 
-    # Pair score prioritizes actual wins together, then win percentage, match count and game difference.
-    stats["pair_score"] = (
-        stats["wins"] * 100
-        + stats["win_pct"]
-        + stats["played"] * 10
-        + stats["games_diff"]
-    ).round(1)
 
-    return stats.sort_values(
-        ["pair_score", "wins", "games_diff"],
-        ascending=[False, False, False],
-    ).reset_index(drop=True)
+def pair_strengths(selected_player_ids, individual):
+    """Same strength scale for established pairs and individual-only estimates."""
+    players = player_history(individual)
+    scores = players.set_index("player_id")["player_score"].to_dict()
+    history = pair_history(individual)
+    known = {tuple(r["pair_key"]): float(r["pair_score"]) for _, r in history.iterrows()}
+    return {pair: known.get(pair, sum(scores.get(p, NEUTRAL_SCORE) for p in pair) / 2)
+            for pair in combinations(sorted(set(selected_player_ids)), 2)}
 
 
 def _perfect_matchings(player_ids: tuple[int, ...]) -> list[tuple[tuple[int, int], tuple[int, int], tuple[int, int]]]:
@@ -188,14 +170,14 @@ def suggest_two_round_lineups(
         for _, row in player_stats.iterrows()
     }
 
-    # Unknown players get a neutral-low score, so known strong players are preferred for extra appearances.
-    default_player_score = 0.0
+    # Players without any history use a neutral prior.
+    default_player_score = NEUTRAL_SCORE
+    strength_lookup = pair_strengths(selected_player_ids, individual)
 
     candidates = []
     six_player_groups = list(combinations(selected_player_ids, 6))
 
     for round1_players in six_player_groups:
-        round1_player_set = set(round1_players)
         round1_options = _perfect_matchings(tuple(round1_players))
 
         for round2_players in six_player_groups:
@@ -215,7 +197,7 @@ def suggest_two_round_lineups(
 
             for round1 in round1_options:
                 used_pairs = set(round1)
-                round1_pair_score = sum(float(pair_lookup.get(pair, {}).get("pair_score", 0)) for pair in round1)
+                round1_pair_score = sum(strength_lookup[pair] for pair in round1)
 
                 for round2 in round2_options:
                     if used_pairs.intersection(round2):
@@ -223,27 +205,31 @@ def suggest_two_round_lineups(
 
                     all_pairs = list(round1) + list(round2)
                     pair_score = round1_pair_score + sum(
-                        float(pair_lookup.get(pair, {}).get("pair_score", 0)) for pair in round2
+                        strength_lookup[pair] for pair in round2
                     )
                     historical_wins = sum(int(pair_lookup.get(pair, {}).get("wins", 0)) for pair in all_pairs)
                     historical_matches = sum(int(pair_lookup.get(pair, {}).get("played", 0)) for pair in all_pairs)
                     games_diff = sum(int(pair_lookup.get(pair, {}).get("games_diff", 0)) for pair in all_pairs)
 
-                    # Pair history is most important. Appearance score only breaks ties / nudges extra playtime.
+                    # Estimated pair strength dominates; individual scores nudge extra playtime.
                     total_score = pair_score + appearance_score * 0.05
 
                     bench = [pid for pid, count in appearances.items() if count == 0]
                     one_match = [pid for pid, count in appearances.items() if count == 1]
                     two_matches = [pid for pid, count in appearances.items() if count == 2]
 
+                    ordered1 = sorted(round1, key=lambda pair: (-strength_lookup[pair], pair))
+                    ordered2 = sorted(round2, key=lambda pair: (-strength_lookup[pair], pair))
                     candidates.append({
-                        "Round 1 - Par 1": _pair_label(round1[0], name_lookup),
-                        "Round 1 - Par 2": _pair_label(round1[1], name_lookup),
-                        "Round 1 - Par 3": _pair_label(round1[2], name_lookup),
-                        "Round 2 - Par 1": _pair_label(round2[0], name_lookup),
-                        "Round 2 - Par 2": _pair_label(round2[1], name_lookup),
-                        "Round 2 - Par 3": _pair_label(round2[2], name_lookup),
-                        "Score": round(total_score, 1),
+                        "Round 1 - Par 1": _pair_label(ordered1[0], name_lookup),
+                        "Round 1 - Par 2": _pair_label(ordered1[1], name_lookup),
+                        "Round 1 - Par 3": _pair_label(ordered1[2], name_lookup),
+                        "Round 2 - Par 1": _pair_label(ordered2[0], name_lookup),
+                        "Round 2 - Par 2": _pair_label(ordered2[1], name_lookup),
+                        "Round 2 - Par 3": _pair_label(ordered2[2], name_lookup),
+                        **{f"Round {r} - Par {i+1} score": round(strength_lookup[pair], 2)
+                           for r, pairs in ((1, ordered1), (2, ordered2)) for i, pair in enumerate(pairs)},
+                        "Score": round(total_score, 2),
                         "Par-score": round(pair_score, 1),
                         "Historiske sejre": historical_wins,
                         "Historiske par-kampe": historical_matches,
