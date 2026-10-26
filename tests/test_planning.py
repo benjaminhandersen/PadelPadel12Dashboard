@@ -144,10 +144,11 @@ class PlanningTests(unittest.TestCase):
             app.multiselect(key=prefix + '_times_2027-02-03').set_value(['18:30']).run()
             app.button(key=prefix + '_prev').click().run()
             self.assertEqual(app.multiselect(key=prefix + '_times_2027-01-02').value, ['10:00', '14:00'])
-            next(w for w in app.text_input if w.label == 'Navn på forslag / modstander').set_value('Ny kamp')
+            self.assertFalse(app.text_input)
             next(b for b in app.button if b.label == 'Udgiv datoer').click().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(store.state['polls']), 2)
+            self.assertEqual(store.state['polls'][-1]['title'], 'Sæsonens kampdatoer')
             self.assertEqual([s['starts_at'] for s in store.state['polls'][-1]['slots']],
                              ['2027-01-02T10:00', '2027-01-02T14:00', '2027-01-05T20:00', '2027-02-03T18:30'])
 
@@ -163,7 +164,6 @@ class PlanningTests(unittest.TestCase):
             app.button(key=prefix + '_date_2027-01-02').click().run()
             self.assertEqual(app.session_state[prefix + '_days'], ['2027-01-05'])
             app.multiselect(key=prefix + '_times_2027-01-05').set_value([]).run()
-            app.text_input(key=prefix + '_title').set_value('Ny kamp')
             app.button(key=prefix + '_save').click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any('hver valgt dag' in error.value for error in app.error))

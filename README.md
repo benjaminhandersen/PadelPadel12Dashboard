@@ -202,6 +202,8 @@ direkte i kalenderen, også på tværs af måneder. De valgte dage vises i en li
 nedenunder med individuelle tidspunkter; hver dag kan have flere tidspunkter.
 Tryk igen på en markeret kalenderdag for at fjerne den. Der er ingen
 ekstra kode eller kaptajnrolle. Forslagene tilhører den valgte sæson.
+Der kræves intet navn eller modstander: nye planer kaldes automatisk
+Sæsonens kampdatoer. Nye valgte dage har kl. 20.00 som standardtidspunkt.
 
 Spilleren vælger navn, markerer alle mulige tidspunkter og gemmer samlet.
 Et gemt tidspunkt uden kryds betyder Kan ikke; uden indsendt svar betyder det

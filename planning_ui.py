@@ -99,8 +99,8 @@ def render_editor(store, season, poll=None):
     for slot in poll['slots'] if poll else []:
         value = datetime.fromisoformat(slot['starts_at'])
         initial.setdefault(value.date().isoformat(), []).append(value.strftime('%H:%M'))
-    title = st.text_input('Navn på forslag / modstander', value=poll['title'] if poll else '',
-                          max_chars=150, key=prefix + '_title')
+    # The plan covers the season; no per-match name or opponent is needed.
+    title = poll['title'] if poll else 'Sæsonens kampdatoer'
     st.markdown('**1. Vælg dage i kalenderen**')
     st.caption('Tryk på alle de dage, du vil foreslå. Tryk igen for at fjerne en dag. Du kan vælge på tværs af måneder.')
     selected_days = render_calendar(prefix, sorted(initial))
@@ -120,8 +120,8 @@ def render_editor(store, season, poll=None):
     deadline = st.date_input('Sidste svardag', value=date.fromisoformat(poll['deadline']) if poll and poll.get('deadline') else today() + timedelta(days=7), key=prefix + '_deadline')
     if st.button('Gem ændringer' if poll else 'Udgiv datoer', key=prefix + '_save', use_container_width=True):
         missing_times = [day for day in selected_days if not any(value.startswith(day + 'T') for value in chosen)]
-        if not title.strip() or not selected_days:
-            st.error('Udfyld et navn og vælg mindst én dag i kalenderen.')
+        if not selected_days:
+            st.error('Vælg mindst én dag i kalenderen.')
         elif missing_times:
             st.error('Tilføj mindst ét tidspunkt til hver valgt dag.')
         else:
@@ -248,7 +248,7 @@ def render_planning(backend, season, season_label):
         return
     by_id = {p['id']: p for p in polls}
     status_labels = dict(open='Åben', closed='Lukket', final='Fastlagt', archived='Arkiveret')
-    poll_id = st.selectbox('Vælg kampforslag', list(by_id),
+    poll_id = st.selectbox('Vælg sæsonplan', list(by_id),
                            format_func=lambda key: f"{by_id[key]['title']} · {status_labels[by_id[key]['status']]}")
     poll = by_id[poll_id]
     if poll.get('deadline'):
