@@ -60,3 +60,23 @@ class FinesTest(unittest.TestCase):
         self.assertEqual(app.dataframe[0].value.iloc[0]['Spiller'], 'Tidligere spiller')
         app.radio[0].set_value('Indstillinger').run()
         self.assertFalse(app.text_input)
+
+    def test_overview_breakdown_uses_quantities_and_historical_amounts(self):
+        from streamlit.testing.v1 import AppTest
+        state = {'rules': [], 'fines': [
+            {'player': 'Benjamin', 'reason': 'Dobbeltfejl', 'quantity': 14, 'amount': 140, 'cancelled': False},
+            {'player': 'Benjamin', 'reason': 'Dobbeltfejl', 'amount': 25, 'cancelled': False},
+            {'player': 'Benjamin', 'reason': 'Glemt bat', 'amount': 100, 'cancelled': True},
+            {'player': 'Jesper', 'reason': 'Glemt bat', 'amount': 100, 'cancelled': False},
+        ]}
+        with patch.object(store, 'snapshot', return_value=state):
+            app = AppTest.from_string("from fines_ui import render_fines\nrender_fines(['Benjamin', 'Jesper', 'Kasper'])").run()
+            app.radio[0].set_value('Overblik').run()
+        self.assertFalse(app.exception)
+        text = '\n'.join(item.value for item in app.markdown)
+        self.assertIn('Benjamin · 165 kr.', text)
+        self.assertIn('15 × Dobbeltfejl · 165 kr.', text)
+        self.assertIn('Jesper · 100 kr.', text)
+        self.assertIn('1 × Glemt bat · 100 kr.', text)
+        self.assertIn('Kasper · 0 kr.', text)
+        self.assertEqual(app.metric[0].value, '265 kr.')

@@ -109,6 +109,23 @@ def render_fines(players=None):
         st.dataframe(table, hide_index=True, use_container_width=True)
         if not active:
             st.info('Ingen bøder endnu. Start under Giv bøde.')
+        else:
+            st.markdown('### Hvem har fået hvilke bøder?')
+            st.caption('Aktive bøder fordelt på spiller og bødetype. Annullerede bøder vises under Historik.')
+            for player in table['Spiller']:
+                player_fines = [fine for fine in active if fine['player'] == player]
+                with st.container(border=True):
+                    player_total = sum(fine['amount'] for fine in player_fines)
+                    st.markdown(f'**{player} · {player_total:,} kr.**'.replace(',', '.'))
+                    if not player_fines:
+                        st.caption('Ingen aktive bøder.')
+                        continue
+                    reasons = sorted({fine['reason'] for fine in player_fines})
+                    for reason in reasons:
+                        matching = [fine for fine in player_fines if fine['reason'] == reason]
+                        quantity = sum(fine.get('quantity', 1) for fine in matching)
+                        amount = sum(fine['amount'] for fine in matching)
+                        st.write(f'{quantity} × {reason} · {amount:,} kr.'.replace(',', '.'))
     elif view == 'Historik':
         player_filter = st.selectbox('Spiller', ['Alle'] + ledger_players, key='fines_filter')
         show_cancelled = st.checkbox('Vis annullerede', value=True)
