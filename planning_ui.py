@@ -166,9 +166,8 @@ def render_planning(backend, season, season_label):
         st.success(message)
     try:
         store = PlanningStore(backend)
-        state = store.snapshot(season)
     except FinesError as exc:
-        st.info(str(exc))
+        st.error(str(exc))
         return
     if st.button('Opret dato', type='primary', use_container_width=True):
         st.session_state['planning_show_create'] = not st.session_state.get('planning_show_create', False)
@@ -176,6 +175,11 @@ def render_planning(backend, season, season_label):
         with st.container(border=True):
             render_editor(store, season)
     st.button('Hent seneste svar', use_container_width=True)
+    try:
+        state = store.snapshot(season)
+    except FinesError:
+        st.error('Kunne ikke hente kampforslag fra den fælles database. Prøv “Hent seneste svar” igen. Du kan stadig åbne “Opret dato”.')
+        return
     archived = st.checkbox('Vis også arkiverede forslag', key='planning_archived')
     polls = [p for p in state['polls'] if archived or p['status'] != 'archived']
     if not polls:

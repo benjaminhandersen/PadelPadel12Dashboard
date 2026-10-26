@@ -2,7 +2,7 @@
 from datetime import datetime
 from uuid import UUID, uuid5
 
-from supabase_fines import FinesError, SharedSupabaseFines
+from supabase_fines import FinesError
 
 
 def make_slots(poll_id, values):
@@ -15,8 +15,12 @@ def make_slots(poll_id, values):
 
 class PlanningStore:
     def __init__(self, backend):
-        if not isinstance(backend, SharedSupabaseFines):
-            raise FinesError('Kampplanlægning kræver appens fælles login og fælles database.')
+        # Reuse the already authenticated client's request interface. Streamlit
+        # reloads can retain a client created from an earlier class definition;
+        # Python class identity is neither an authorization check nor a reliable
+        # way to detect a working connection. request() and DB grants enforce access.
+        if not callable(getattr(backend, 'request', None)):
+            raise FinesError('Kampplanlægning mangler en fælles databaseforbindelse. Log ud og ind igen, eller kontakt administratoren.')
         self.backend = backend
 
     def snapshot(self, season):

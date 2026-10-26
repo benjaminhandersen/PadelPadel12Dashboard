@@ -61,6 +61,45 @@ class PlanningTests(unittest.TestCase):
                 store.save_vote(sample_state()['polls'][0], 1, [])
             request.assert_not_called()
 
+    def test_existing_connection_does_not_require_matching_python_class(self):
+        authorized = Mock(return_value=True)
+        backend = SharedSupabaseFines('https://test.supabase.co', 'sb_publishable_test', 'sb_secret_test', authorized)
+
+        class ExistingConnection:
+            # Equivalent to a client retained across Streamlit module reloads.
+            request = backend.request
+
+        store = PlanningStore(ExistingConnection())
+        with patch('supabase_fines.requests.request') as request:
+            request.return_value = Mock(ok=True, status_code=200, content=b'json', json=lambda: sample_state())
+            self.assertTrue(store.snapshot('test')['polls'])
+            authorized.return_value = False
+            with self.assertRaises(FinesError):
+                store.snapshot('test')
+            self.assertEqual(request.call_count, 1)
+
+    def test_create_button_remains_available_when_snapshot_fails(self):
+        store = FakeStore()
+        store.snapshot = Mock(side_effect=FinesError('Temporary read failure'))
+        with patch('planning_ui.PlanningStore', return_value=store):
+            app = self.app().run()
+            next(b for b in app.button if b.label == 'Opret dato').click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(app.error)
+            self.assertTrue(any(b.label == 'Udgiv datoer' for b in app.button))
+
+    def test_actual_shared_login_route_shows_create_button(self):
+        backend = SharedSupabaseFines('https://test.supabase.co', 'sb_publishable_test', 'sb_secret_test', lambda: True)
+        state = dict(players=[], polls=[], votes=[])
+        with patch('fines_connection.get_store', return_value=backend), \
+                patch('navigation.render_navigation'), \
+                patch('supabase_fines.requests.request') as request:
+            request.return_value = Mock(ok=True, status_code=200, content=b'json', json=lambda: dict(state, role='admin'))
+            app = AppTest.from_file('pages/3_Kampplanlaegning.py').run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any(b.label == 'Opret dato' for b in app.button))
+            self.assertFalse(app.error)
+
     def app(self):
         return AppTest.from_string("from planning_ui import render_planning\nrender_planning(None, 'test', 'Testsæson')")
 
