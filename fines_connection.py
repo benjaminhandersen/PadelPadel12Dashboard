@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 import streamlit as st
 
-from supabase_fines import FinesError, SupabaseFines
+from supabase_fines import FinesError, SupabaseFines, SharedSupabaseFines
+from shared_access import shared_credentials, shared_authorized, shared_login
 
 
 def get_store(show_account=True):
@@ -23,6 +24,18 @@ def get_store(show_account=True):
     if not url or not key:
         st.info('Appen mangler Supabase-forbindelsen. Administratoren skal tilføje projektets URL og publishable key i Streamlit Secrets.')
         return None
+    shared_password, secret_key = shared_credentials()
+    if shared_password or secret_key:
+        if not shared_password or not secret_key:
+            st.error('Fælles login er ikke færdigkonfigureret. Udfyld både access.password og supabase.secret_key i Streamlit Secrets.')
+            return None
+        if not shared_login(shared_password, show_account):
+            return None
+        try:
+            return SharedSupabaseFines(url, key, secret_key, shared_authorized)
+        except FinesError as exc:
+            st.error(str(exc))
+            return None
     state = st.session_state.setdefault('fines_auth', {})
     try:
         backend = SupabaseFines(url, key, state)
@@ -65,7 +78,7 @@ def get_store(show_account=True):
 
 def require_app_login():
     """Gate every entry point before loading Rankedin or showing team data."""
-    if not st.session_state.get('fines_auth', {}).get('access_token'):
+    if not shared_authorized() and not st.session_state.get('fines_auth', {}).get('access_token'):
         st.title('🎾 Padel Dashboard')
     backend = get_store()
     if backend is None:

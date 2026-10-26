@@ -39,10 +39,32 @@ streamlit run dashboard.py
 
 ### Bødekassen
 
-Hele appen kræver login med en godkendt holdkonto. Det gælder dashboardet,
-Holdforslag og direkte links til Bødekassen. Login kontrolleres før Rankedin-data
-hentes eller vises. Den samme konto og session bruges på alle sider; bødekassen
-har ikke et separat login. E-mailen behøver ikke være den samme som på Rankedin.
+Hele appen kræver adgang ved indgangen, inklusive Holdforslag og direkte links
+til Bødekassen. Holdet ønsker én fælles adgangskode. Aktivér dette i Streamlit
+Community Cloud under appens **Settings → Secrets**:
+
+```toml
+[access]
+password = "VÆLG-JERES-EGEN-FÆLLES-KODE"
+
+[supabase]
+secret_key = "sb_secret_INDSÆT-SERVERNØGLEN-HER"
+```
+
+Hent servernøglen under Supabase **Settings → API Keys → Secret keys**.
+Hvis `[supabase]` allerede findes i Secrets, tilføjes `secret_key` i den
+eksisterende sektion. Koden og servernøglen må kun gemmes i Secrets eller
+miljøvariablerne `APP_PASSWORD`/`SUPABASE_SECRET_KEY`; de sendes ikke til browseren
+eller GitHub. Der er ingen standardkode. Begge værdier kræves for at aktivere
+fælles adgang. Indtil opsætningen er udført, bruges den eksisterende kontologin.
+Delvis opsætning blokerer adgang i stedet for at åbne appen.
+
+Alle med fælleskoden kan se data, give/fortryde bøder og ændre satser. Ingen skal
+oprette en personlig bruger eller oplyse e-mail. Handlinger er fælles og kan
+ikke henføres til den person, der udførte dem. Kodeændring kræver nyt login i
+eksisterende sessioner. Databasen er fortsat lukket for offentlige klienter;
+Python-serveren kontrollerer adgang før hver databasehandling. Bødekassen har
+ikke et separat login. Importerede bøder og spiller-id'er bevares.
 
 Find fanen **Bødekassen** i dashboardet, eller brug den separate side i menuen
 (den virker også, hvis Rankedin er utilgængelig). Vælg bødetype og tryk på en
@@ -55,7 +77,8 @@ Satser følger inspirationsarket. Den 26. oktober 2026 blev 31 registreringer
 importeret i Supabase: 58 aktive bøder på 1.310 kr. og 6 annullerede registreringer.
 Historiske antal bevares samlet, og ukendte datoer vises som ukendte.
 
-Bødekassen gemmes fælles og varigt i Supabase. Brug din egen holdkonto under
+Bødekassen gemmes fælles og varigt i Supabase. I den tidligere kontotilstand
+(når fælleskoden ikke er konfigureret) bruges din egen holdkonto under
 **Opret konto**, bekræft e-mailen, og log ind. En konto giver kun adgang, når
 dens bekræftede e-mail er godkendt i `padel_members`. Kun administratoren må
 ændre satser og synkronisere spillerlisten; holdmedlemmer må give og fortryde
@@ -63,8 +86,9 @@ bøder. Ingen offentlig læse- eller skriveadgang. Registreringers beløb kan ik
 ændres fra appen, og eksisterende beløb bevares ved satsændringer.
 
 `supabase_public.json` indeholder kun projektets URL og en **publishable key**,
-som er beregnet til offentlige klienter. Ingen service-nøgle bruges. RLS og
-brugerens Supabase-login beskytter alle data. URL/nøgle kan tilsidesættes med
+som er beregnet til offentlige klienter. Fælleskodetilstanden bruger derudover
+en servernøgle fra Secrets, mens kontotilstanden bruger RLS og personligt login.
+URL/publishable key kan tilsidesættes med
 `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` eller følgende Streamlit Secrets:
 
 ```toml

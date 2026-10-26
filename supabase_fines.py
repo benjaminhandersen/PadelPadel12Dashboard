@@ -125,3 +125,36 @@ class SupabaseFines:
                             headers={'Prefer': 'return=representation'}, json={'amount': amount})
         if not rows:
             raise FinesError('Satsen blev ikke ændret. Kun administratoren kan ændre satser.')
+
+
+class SharedSupabaseFines(SupabaseFines):
+    """Server-only data access after the app's shared password has been checked."""
+    def __init__(self, url, publishable_key, secret_key, authorized):
+        super().__init__(url, publishable_key, {})
+        if not secret_key.startswith('sb_secret_'):
+            raise FinesError('Den fælles adgang mangler en gyldig Supabase secret key i Streamlit Secrets.')
+        self.key = secret_key
+        self._authorized = authorized
+
+    def request(self, method, path, *, authenticated=True, **kwargs):
+        if not self._authorized():
+            raise FinesError('Log ind med holdets fælles kode først.')
+        return super().request(method, path, authenticated=False, **kwargs)
+
+    def refresh(self):
+        return
+
+    def snapshot(self):
+        state = self.request('POST', '/rest/v1/rpc/padel_fines_snapshot', json={})
+        state['role'] = 'admin'
+        return state
+
+    def give_fine(self, player, reason, roster, request_id=None, player_id=None):
+        matches = [p for p in roster if (p['player_id'] == player_id if player_id is not None else p['name'] == player)]
+        if len(matches) != 1:
+            raise FinesError('Spilleren findes ikke i det valgte holds Rankedin-data.')
+        rows = self.request('POST', '/rest/v1/rpc/padel_give_shared_fine', json={
+            'p_id': request_id or str(uuid4()), 'p_player_id': int(matches[0]['player_id']), 'p_reason': reason})
+        if not rows:
+            raise FinesError('Bøden blev ikke gemt. Opdater bødekassen og prøv igen.')
+        return rows[0]['id'], rows[0]['amount']
