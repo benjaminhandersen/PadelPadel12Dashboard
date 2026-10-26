@@ -186,3 +186,9 @@ er summen af seks parvurderinger plus 5 % af spillerscoren pr. deltagelse.
 Vægtene er heuristiske, ikke en beregnet vinderchance; alle sæsoner tilføjet dashboardet bruges og vægter ens.
 
 Holdforslag og den kompakte sammenligning viser makkerpar på enkle kort. Kendte par viser sejre/kampe fordelt på bane 1, 2 og 3; ukendt bane indgår kun i den samlede historik. Nye par markeres fortsat tydeligt.
+
+### Holdoverblik
+Hovedsiden hedder Holdoverblik i navigationen. Sæsonens nøgletal, næste kamp,
+seneste fem resultater og puljestilling vises grafisk. Spillere, makkerpar og
+kampe har responsive kort; detaljerede tabeller kan fortsat åbnes.
+Oversigten bruger den valgte sæson, mens Holdforslag bruger alle tilføjede sæsoner.

@@ -1,5 +1,6 @@
 import streamlit as st
 from fines_connection import require_app_login
+from navigation import render_navigation
 from lineup_ui import render_lineup_suggestions
 from lineup_history import load_lineup_history
 
@@ -13,6 +14,7 @@ from lineup_optimizer import (
 
 st.set_page_config(page_title="Holdforslag", page_icon="🎯", layout="wide")
 require_app_login()
+render_navigation()
 
 DATA_CACHE_VERSION = 5
 

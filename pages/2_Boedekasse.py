@@ -1,12 +1,14 @@
 import streamlit as st
 from fines_ui import render_fines
 from fines_connection import require_app_login
+from navigation import render_navigation
 from app_config import get_active_season, load_config
 from lineup_optimizer import all_known_players
 from padel_pipeline import build_dataset
 
 st.set_page_config(page_title='Bødekassen', page_icon='💰', layout='centered')
 fines_backend = require_app_login()
+render_navigation()
 
 @st.cache_data(ttl=60 * 15)
 def load_players(team_id, pool_id):
