@@ -1,4 +1,5 @@
 import streamlit as st
+from fines_connection import require_app_login
 
 from app_config import get_active_season, load_config
 from padel_pipeline import build_dataset
@@ -9,6 +10,7 @@ from lineup_optimizer import (
 )
 
 st.set_page_config(page_title="Holdforslag", page_icon="🎯", layout="wide")
+require_app_login()
 
 DATA_CACHE_VERSION = 4
 

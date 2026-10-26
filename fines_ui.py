@@ -6,11 +6,12 @@ from fines_connection import get_store
 from supabase_fines import FinesError, SupabaseFines
 
 
-def render_fines(players=None):
+def render_fines(players=None, store=None):
     roster = [p if isinstance(p, dict) else {'name': str(p), 'player_id': None} for p in (players or [])]
     players = sorted({p['name'].strip() for p in roster if p['name'].strip()})
     st.subheader('Bødekassen')
-    store = get_store()
+    if store is None:
+        store = get_store(show_account=False)
     if store is None:
         return
     remote = isinstance(store, SupabaseFines)

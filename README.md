@@ -39,6 +39,11 @@ streamlit run dashboard.py
 
 ### Bødekassen
 
+Hele appen kræver login med en godkendt holdkonto. Det gælder dashboardet,
+Holdforslag og direkte links til Bødekassen. Login kontrolleres før Rankedin-data
+hentes eller vises. Den samme konto og session bruges på alle sider; bødekassen
+har ikke et separat login. E-mailen behøver ikke være den samme som på Rankedin.
+
 Find fanen **Bødekassen** i dashboardet, eller brug den separate side i menuen
 (den virker også, hvis Rankedin er utilgængelig). Vælg bødetype og tryk på en
 spiller. Overblik viser stillingen; Historik giver fortryd/gendan og CSV-eksport.

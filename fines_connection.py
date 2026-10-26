@@ -7,7 +7,7 @@ import streamlit as st
 from supabase_fines import FinesError, SupabaseFines
 
 
-def get_store():
+def get_store(show_account=True):
     # Explicit local database is reserved for development/tests.
     if os.environ.get('PADEL_FINES_DB'):
         import fines_store
@@ -21,7 +21,7 @@ def get_store():
     url = os.environ.get('SUPABASE_URL') or config.get('url') or public.get('url')
     key = os.environ.get('SUPABASE_PUBLISHABLE_KEY') or config.get('publishable_key') or public.get('publishable_key')
     if not url or not key:
-        st.info('Bødekassen mangler Supabase-forbindelsen. Administratoren skal tilføje projektets URL og publishable key i Streamlit Secrets.')
+        st.info('Appen mangler Supabase-forbindelsen. Administratoren skal tilføje projektets URL og publishable key i Streamlit Secrets.')
         return None
     state = st.session_state.setdefault('fines_auth', {})
     try:
@@ -52,11 +52,29 @@ def get_store():
                 except FinesError as exc:
                     st.error(str(exc))
         return None
-    st.caption('Logget ind som ' + state.get('email', 'holdmedlem'))
-    if st.button('Log ud', key='fines_logout'):
+    if show_account:
+        st.caption('Logget ind som ' + state.get('email', 'holdmedlem'))
+    if show_account and st.button('Log ud', key='fines_logout'):
         try:
             backend.logout()
         except FinesError:
             pass
         st.rerun()
+    return backend
+
+
+def require_app_login():
+    """Gate every entry point before loading Rankedin or showing team data."""
+    if not st.session_state.get('fines_auth', {}).get('access_token'):
+        st.title('🎾 Padel Dashboard')
+    backend = get_store()
+    if backend is None:
+        st.stop()
+    if isinstance(backend, SupabaseFines):
+        try:
+            # The database validates the JWT and approved membership on every rerun.
+            backend.snapshot()
+        except FinesError as exc:
+            st.error(str(exc))
+            st.stop()
     return backend

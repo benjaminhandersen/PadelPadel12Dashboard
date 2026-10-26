@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 from fines_ui import render_fines
+from fines_connection import require_app_login
 from lineup_optimizer import all_known_players
 
 from padel_pipeline import build_dataset, stat_best_pairs, stat_per_match
@@ -10,6 +11,7 @@ from player_stats import player_set_stats, season_coverage
 from app_config import load_config, get_active_season, set_active_season, upsert_season
 
 st.set_page_config(page_title="Padel Dashboard", page_icon="🎾", layout="wide")
+fines_backend = require_app_login()
 
 # Bump when the shape or interpretation of build_dataset() changes. Streamlit
 # otherwise keeps results produced by older parser code in its data cache.
@@ -191,7 +193,7 @@ tab_standings, tab_players, tab_pairs, tab_matches, tab_upcoming, tab_availabili
 )
 
 with tab_fines:
-    render_fines(all_known_players(individual, lineup).to_dict('records'))
+    render_fines(all_known_players(individual, lineup).to_dict('records'), store=fines_backend)
 
 with tab_standings:
     st.subheader("Puljestilling")
