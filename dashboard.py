@@ -77,9 +77,9 @@ def match_detail_table(sub: pd.DataFrame) -> pd.DataFrame:
             "Sæt": r["sets_str"],
             "Sæt vundet": int(r["sets_won"]),
             "Sæt tabt": int(r["sets_lost"]),
-            "Games vundet": int(r["games_won"]),
-            "Games tabt": int(r["games_lost"]),
-            "Games±": int(r["games_diff"]),
+            "Partier vundet": int(r["games_won"]),
+            "Partier tabt": int(r["games_lost"]),
+            "Partier±": int(r["games_diff"]),
         })
     return pd.DataFrame(rows)
 
@@ -97,17 +97,17 @@ def player_contribution_table(sub: pd.DataFrame) -> pd.DataFrame:
     out = per.groupby(["player_id", "Spiller"]).agg(
         Kampe=("won", "count"),
         V=("won", "sum"),
-        Games_vundet=("games_won", "sum"),
-        Games_tabt=("games_lost", "sum"),
-        Games_diff=("games_diff", "sum"),
+        Partier_vundet=("games_won", "sum"),
+        Partier_tabt=("games_lost", "sum"),
+        Partier_diff=("games_diff", "sum"),
     ).reset_index()
     out["T"] = out["Kampe"] - out["V"]
     out["Win %"] = (out["V"] / out["Kampe"] * 100).round(1)
     return out.rename(columns={
-        "Games_vundet": "Games vundet",
-        "Games_tabt": "Games tabt",
-        "Games_diff": "Games±",
-    })[["Spiller", "Kampe", "V", "T", "Win %", "Games vundet", "Games tabt", "Games±"]]
+        "Partier_vundet": "Partier vundet",
+        "Partier_tabt": "Partier tabt",
+        "Partier_diff": "Partier±",
+    })[["Spiller", "Kampe", "V", "T", "Win %", "Partier vundet", "Partier tabt", "Partier±"]]
 
 
 cfg = load_config()
@@ -191,8 +191,8 @@ with tab_standings:
     else:
         show = standings.rename(columns={
             "standing": "#", "team_name": "Hold", "match_points": "Pts", "played": "Sp",
-            "wins": "V", "draws": "U", "losses": "T", "sets_diff": "Sæt±", "games_diff": "Games±",
-        })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
+            "wins": "V", "draws": "U", "losses": "T", "sets_diff": "Sæt±", "games_diff": "Partier±",
+        })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Partier±", "participant_id"]]
 
         def highlight_us(row):
             return ["background-color: rgba(99,153,255,0.18); font-weight: 600;"] * len(row) if row["participant_id"] == our_participant_id else [""] * len(row)
@@ -200,21 +200,21 @@ with tab_standings:
         render_standings(standings, our_participant_id)
         with st.expander("Se den fulde stilling som tabel"):
             st.dataframe(
-                show.style.apply(highlight_us, axis=1).format({"Sæt±": "{:+d}", "Games±": "{:+d}"}).hide(subset=["participant_id"], axis=1),
+                show.style.apply(highlight_us, axis=1).format({"Sæt±": "{:+d}", "Partier±": "{:+d}"}).hide(subset=["participant_id"], axis=1),
                 use_container_width=True, hide_index=True,
             )
 
 
 with tab_players:
     st.subheader("Spillerstatistik")
-    st.caption("Primært baseret på individuelle kampe: hvor mange doublekampe hver spiller har spillet, vundet og tabt. Sæt og games vises som ekstra detaljer.")
+    st.caption("Primært baseret på individuelle kampe: hvor mange doublekampe hver spiller har spillet, vundet og tabt. Sæt og partier vises som ekstra detaljer.")
 
     player_stats = player_set_stats(individual)
     if player_stats.empty:
         st.info("Ingen individuelle matches i data endnu.")
     else:
         main_cols = ["Spiller", "Ind. kampe", "Match V", "Match T", "Match %"]
-        detail_cols = ["Sæt vundet", "Sæt tabt", "Sæt±", "Sæt %", "Games vundet", "Games tabt", "Games±"]
+        detail_cols = ["Sæt vundet", "Sæt tabt", "Sæt±", "Sæt %", "Partier vundet", "Partier tabt", "Partier±"]
         render_player_cards(player_stats)
         with st.expander("Se alle spillertal og sammenlign resultater"):
             st.dataframe(player_stats[main_cols + detail_cols], use_container_width=True, hide_index=True)
@@ -260,15 +260,15 @@ with tab_matches:
         overview = played.rename(columns={
             "round": "Runde", "datetime": "Dato", "opponent": "Modstander", "venue": "H/U",
             "our_score": "Os", "their_score": "Dem", "doubles_won": "Ind. vundet",
-            "doubles_played": "Ind. spillet", "total_games_won": "Games vundet",
-            "total_games_lost": "Games tabt", "games_diff": "Games±",
+            "doubles_played": "Ind. spillet", "total_games_won": "Partier vundet",
+            "total_games_lost": "Partier tabt", "games_diff": "Partier±",
         }).copy()
         overview["Dato"] = overview["Dato"].dt.strftime("%d/%m/%Y")
         overview["H/U"] = overview["H/U"].map({"home": "Hjemme", "away": "Ude"}).fillna(overview["H/U"])
         overview["Resultat"] = overview.apply(lambda r: f"{fmt_int(r['Os'])}–{fmt_int(r['Dem'])}", axis=1)
         render_fixture_cards(played.sort_values('datetime', ascending=False), played=True)
         with st.expander("Se alle kampresultater som tabel"):
-            st.dataframe(overview[["Runde", "Dato", "Modstander", "H/U", "Resultat", "Ind. vundet", "Ind. spillet", "Games vundet", "Games tabt", "Games±"]], use_container_width=True, hide_index=True)
+            st.dataframe(overview[["Runde", "Dato", "Modstander", "H/U", "Resultat", "Ind. vundet", "Ind. spillet", "Partier vundet", "Partier tabt", "Partier±"]], use_container_width=True, hide_index=True)
 
         played["label"] = played.apply(lambda r: f"R{r['round']} · {r['datetime'].strftime('%d/%m')} · {r['opponent']}", axis=1)
         choice = st.selectbox("Vælg kamp for detaljer", played["label"].tolist())
@@ -280,8 +280,8 @@ with tab_matches:
         c1.metric("Holdkamp", f"{fmt_int(chosen['our_score'])} – {fmt_int(chosen['their_score'])}")
         c2.metric("Udfald", "Uafgjort" if chosen["our_score"] == chosen["their_score"] else ("Vundet" if chosen["won"] else "Tabt"))
         c3.metric("Individuelle", f"{fmt_int(chosen.get('doubles_won'))} / {fmt_int(chosen.get('doubles_played'))}")
-        c4.metric("Games", f"{fmt_int(chosen.get('total_games_won'))} – {fmt_int(chosen.get('total_games_lost'))}")
-        c5.metric("Games±", fmt_signed(chosen.get("games_diff")))
+        c4.metric("Partier", f"{fmt_int(chosen.get('total_games_won'))} – {fmt_int(chosen.get('total_games_lost'))}")
+        c5.metric("Partier±", fmt_signed(chosen.get("games_diff")))
 
         if not sub.empty:
             st.markdown("**Individuelle kampe**")

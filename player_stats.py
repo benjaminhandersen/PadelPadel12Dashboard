@@ -39,9 +39,9 @@ def player_set_stats(individual: pd.DataFrame) -> pd.DataFrame:
             Match_V=("won", "sum"),
             Sets_vundet=("sets_won", "sum"),
             Sets_tabt=("sets_lost", "sum"),
-            Games_vundet=("games_won", "sum"),
-            Games_tabt=("games_lost", "sum"),
-            Games_diff=("games_diff", "sum"),
+            Partier_vundet=("games_won", "sum"),
+            Partier_tabt=("games_lost", "sum"),
+            Partier_diff=("games_diff", "sum"),
         )
         .reset_index()
     )
@@ -59,9 +59,9 @@ def player_set_stats(individual: pd.DataFrame) -> pd.DataFrame:
             "Match_T": "Match T",
             "Sets_vundet": "Sæt vundet",
             "Sets_tabt": "Sæt tabt",
-            "Games_vundet": "Games vundet",
-            "Games_tabt": "Games tabt",
-            "Games_diff": "Games±",
+            "Partier_vundet": "Partier vundet",
+            "Partier_tabt": "Partier tabt",
+            "Partier_diff": "Partier±",
         })[[
             "Spiller",
             "Ind. kampe",
@@ -72,11 +72,11 @@ def player_set_stats(individual: pd.DataFrame) -> pd.DataFrame:
             "Sæt tabt",
             "Sæt±",
             "Sæt %",
-            "Games vundet",
-            "Games tabt",
-            "Games±",
+            "Partier vundet",
+            "Partier tabt",
+            "Partier±",
         ]]
-        .sort_values(["Sæt vundet", "Sæt %", "Games±"], ascending=[False, False, False])
+        .sort_values(["Sæt vundet", "Sæt %", "Partier±"], ascending=[False, False, False])
         .reset_index(drop=True)
     )
 

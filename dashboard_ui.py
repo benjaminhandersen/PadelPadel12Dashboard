@@ -57,9 +57,9 @@ def render_team_header(name, season, standings_row, matches):
     if standings_row is not None:
         s=standings_row
         values=[('Placering',f'{_number(s["standing"])}.'),('Holdkampe',f'{_number(s["played"])} / {len(matches)}'),
-                ('Point',_number(s['match_points'])),('Gamesforskel',_number(s['games_diff'],True))]
+                ('Point',_number(s['match_points'])),('Partiforskel',_number(s['games_diff'],True))]
     else:
-        values=[('Placering','—'),('Holdkampe',f'{len(played)} / {len(matches)}'),('Point','—'),('Gamesforskel','—')]
+        values=[('Placering','—'),('Holdkampe',f'{len(played)} / {len(matches)}'),('Point','—'),('Partiforskel','—')]
     metrics=''.join(f'<div class="tv-metric"><strong>{value}</strong><span>{label}</span></div>' for label,value in values)
     _render('<section class="tv-hero"><div class="tv-eyebrow">Holdoverblik · PadelPadel 12</div>'
             f'<h1>{_text(name)}</h1><div class="tv-subtitle">{_text(season)} · Statistik for den valgte sæson</div>'
@@ -113,7 +113,7 @@ def render_standings(standings, our_id):
     for _,r in standings.sort_values('standing').iterrows():
         css=' tv-us' if r['participant_id']==our_id else ''
         rows.append(f'<div class="tv-standing{css}"><div class="tv-rank">{_number(r["standing"])}</div>'
-                    f'<div><div class="tv-team">{_text(r["team_name"])}</div><div class="tv-small">{_number(r["played"])} kampe · Games {_number(r["games_diff"],True)}</div></div>'
+                    f'<div><div class="tv-team">{_text(r["team_name"])}</div><div class="tv-small">{_number(r["played"])} kampe · Partier {_number(r["games_diff"],True)}</div></div>'
                     f'<div class="tv-small tv-record">{_number(r["wins"])} V · {_number(r["draws"])} U · {_number(r["losses"])} T</div>'
                     f'<div class="tv-points">{_number(r["match_points"])}<small>POINT</small></div></div>')
     _render(''.join(rows))
@@ -129,7 +129,7 @@ def render_player_cards(stats):
                      f'<span class="tv-avatar">{escape(initials)}</span><strong>{escape(name)}</strong></div>'
                      f'<div class="tv-numbers"><span><b>{_number(r["Ind. kampe"])}</b>Kampe</span><span><b>{_number(r["Match V"])}</b>Sejre</span><span><b>{pct:g} %</b>Vundet</span></div>'
                      f'<div class="tv-bar"><span style="width:{max(0,min(100,pct))}%"></span></div>'
-                     f'<div class="tv-meta" style="margin-top:12px">Sæt {_number(r["Sæt±"],True)} · Games {_number(r["Games±"],True)}</div></article>')
+                     f'<div class="tv-meta" style="margin-top:12px">Sæt {_number(r["Sæt±"],True)} · Partier {_number(r["Partier±"],True)}</div></article>')
     _render('<div class="tv-grid">'+''.join(cards)+'</div>')
 
 

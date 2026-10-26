@@ -238,7 +238,7 @@ def suggest_two_round_lineups(
                         "Par-score": round(pair_score, 1),
                         "Historiske sejre": historical_wins,
                         "Historiske par-kampe": historical_matches,
-                        "Games±": games_diff,
+                        "Partier±": games_diff,
                         "Spiller 2 kampe": ", ".join(name_lookup[p] for p in two_matches),
                         "Spiller 1 kamp": ", ".join(name_lookup[p] for p in one_match),
                         "Spiller 0 kampe": ", ".join(name_lookup[p] for p in bench),
@@ -250,7 +250,7 @@ def suggest_two_round_lineups(
     return (
         pd.DataFrame(candidates)
         .sort_values(
-            ["Score", "Historiske sejre", "Games±", "Historiske par-kampe"],
+            ["Score", "Historiske sejre", "Partier±", "Historiske par-kampe"],
             ascending=[False, False, False, False],
         )
         .drop_duplicates()

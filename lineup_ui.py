@@ -123,7 +123,7 @@ def render_lineup_suggestions(results, history, selected_names):
     st.markdown(''.join(parts), unsafe_allow_html=True)
     st.caption('Stærkeste vurderede par spiller på bane 1 i hver runde. Styrkeindekset er en vurdering, ikke en vinderchance.')
     with st.expander('Sådan beregnes styrken'):
-        st.write('Hver kamp giver 100 ved sejr og 0 ved nederlag, plus gameforskel begrænset til ±10. '
+        st.write('Hver kamp giver 100 ved sejr og 0 ved nederlag, plus partiforskel begrænset til ±10. '
                  'Bane 1 giver +20, bane 2 giver 0 og bane 3 giver −20, også ved nederlag. '
                  'Banen antages ud fra Rankedin-rækkefølgen: 1–3 i første runde og 1–3 i anden. '
                  'En eventuel syvende kamp eller ukendt bane får intet banetillæg. '
@@ -150,6 +150,6 @@ def render_lineup_suggestions(results, history, selected_names):
             st.info('Ingen makkerpar-historik for de valgte spillere endnu.')
         else:
             labels = {'pair': 'Makkerpar', 'played': 'Kampe', 'wins': 'Vundet', 'losses': 'Tabt',
-                      'win_pct': 'Vundet %', 'games_diff': 'Games±', 'pair_score': 'Vurderet styrke'}
+                      'win_pct': 'Vundet %', 'games_diff': 'Partier±', 'pair_score': 'Vurderet styrke'}
             labels.update({f'court_{court}_{metric}': f'Bane {court} · {label}' for court in (1, 2, 3) for metric, label in (('wins', 'Sejre'), ('played', 'Kampe'))})
             st.dataframe(history.drop(columns=['pair_key'], errors='ignore').rename(columns=labels), use_container_width=True, hide_index=True)

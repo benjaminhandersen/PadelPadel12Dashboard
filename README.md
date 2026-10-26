@@ -173,7 +173,7 @@ skal bruges kommercielt eller til andet end privat klubbrug.
 
 ### Holdforslagenes styrkevurdering
 Forslagene sorterer hvert rundes tre par efter vurderet styrke: stærkest på bane 1.
-Hver historisk kamp giver 100 ved sejr eller 0 ved nederlag, plus gameforskel
+Hver historisk kamp giver 100 ved sejr eller 0 ved nederlag, plus partiforskel
 begrænset til ±10 og banetillæg +20/0/−20 for bane 1/2/3 (også ved nederlag).
 Baner udledes som en antagelse af Rankedin-kamppladserne 1–3 og 4–6 ved
 MatchOrder=1; manglende/ukendt rækkefølge og en syvende kamp får intet tillæg.

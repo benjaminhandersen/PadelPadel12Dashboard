@@ -71,8 +71,8 @@ with st.expander("📊 Puljestilling", expanded=False):
             "draws": "U",
             "losses": "T",
             "sets_diff": "Sæt±",
-            "games_diff": "Games±",
-        })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
+            "games_diff": "Partier±",
+        })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Partier±", "participant_id"]]
 
         def highlight_us(row):
             configured_name = str(active.get("team_name", "")).replace(" ", "").replace("-", "").lower()
@@ -84,7 +84,7 @@ with st.expander("📊 Puljestilling", expanded=False):
         st.dataframe(
             show.style
                 .apply(highlight_us, axis=1)
-                .format({"Sæt±": "{:+d}", "Games±": "{:+d}"})
+                .format({"Sæt±": "{:+d}", "Partier±": "{:+d}"})
                 .hide(subset=["participant_id"], axis=1),
             use_container_width=True,
             hide_index=True,
