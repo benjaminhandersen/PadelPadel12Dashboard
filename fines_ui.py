@@ -3,6 +3,7 @@ import streamlit as st
 from uuid import uuid4
 
 from fines_connection import get_store
+from fines_overview import render_overview
 from supabase_fines import FinesError, SupabaseFines
 
 
@@ -103,30 +104,7 @@ def render_fines(players=None, store=None):
                               use_container_width=True, on_click=give, args=(player, reason, entry['player_id']))
 
     elif view == 'Overblik':
-        rows = [{'Spiller': p, 'Antal': sum(f.get('quantity', 1) for f in active if f['player'] == p),
-                 'Bøder (kr.)': sum(f['amount'] for f in active if f['player'] == p)} for p in ledger_players]
-        table = pd.DataFrame(rows, columns=['Spiller', 'Antal', 'Bøder (kr.)']).sort_values(['Bøder (kr.)', 'Spiller'], ascending=[False, True])
-        table.insert(0, 'Plads', table['Bøder (kr.)'].rank(method='min', ascending=False).astype(int))
-        st.dataframe(table, hide_index=True, use_container_width=True)
-        if not active:
-            st.info('Ingen bøder endnu. Start under Giv bøde.')
-        else:
-            st.markdown('### Hvem har fået hvilke bøder?')
-            st.caption('Aktive bøder fordelt på spiller og bødetype. Annullerede bøder vises under Historik.')
-            for player in table['Spiller']:
-                player_fines = [fine for fine in active if fine['player'] == player]
-                with st.container(border=True):
-                    player_total = sum(fine['amount'] for fine in player_fines)
-                    st.markdown(f'**{player} · {player_total:,} kr.**'.replace(',', '.'))
-                    if not player_fines:
-                        st.caption('Ingen aktive bøder.')
-                        continue
-                    reasons = sorted({fine['reason'] for fine in player_fines})
-                    for reason in reasons:
-                        matching = [fine for fine in player_fines if fine['reason'] == reason]
-                        quantity = sum(fine.get('quantity', 1) for fine in matching)
-                        amount = sum(fine['amount'] for fine in matching)
-                        st.write(f'{quantity} × {reason} · {amount:,} kr.'.replace(',', '.'))
+        render_overview(active, ledger_players, state['rules'])
     elif view == 'Historik':
         player_filter = st.selectbox('Spiller', ['Alle'] + ledger_players, key='fines_filter')
         show_cancelled = st.checkbox('Vis annullerede', value=True)
