@@ -9,6 +9,10 @@ from app_config import load_config, get_active_season, set_active_season, upsert
 
 st.set_page_config(page_title="Padel Dashboard", page_icon="🎾", layout="wide")
 
+# Bump when the shape or interpretation of build_dataset() changes. Streamlit
+# otherwise keeps results produced by older parser code in its data cache.
+DATA_CACHE_VERSION = 4
+
 
 def fmt_int(value, default="—"):
     if pd.isna(value):
@@ -139,13 +143,13 @@ st.sidebar.caption(f"Team ID: {team_id} · Pool ID: {pool_id}")
 
 
 @st.cache_data(ttl=60 * 15)
-def load_data(team_id: int, pool_id: int):
+def load_data(team_id: int, pool_id: int, cache_version: int):
     return build_dataset(team_id, pool_id)
 
 
 with st.spinner("Henter data fra Rankedin..."):
     try:
-        data = load_data(team_id, pool_id)
+        data = load_data(team_id, pool_id, DATA_CACHE_VERSION)
     except Exception as e:
         st.error(f"Fejl ved dataindlæsning: {e}")
         st.stop()
@@ -283,28 +287,63 @@ with tab_matches:
 
 with tab_upcoming:
     st.subheader("Kommende kampe")
-    upcoming = team_matches[~team_matches["played"]].copy() if not team_matches.empty else pd.DataFrame()
+    upcoming = (
+        team_matches[~team_matches["played"]]
+        .sort_values(["datetime", "round"])
+        .reset_index(drop=True)
+        .copy()
+        if not team_matches.empty
+        else pd.DataFrame()
+    )
     if upcoming.empty:
         st.success("Ingen kommende kampe i denne sæson.")
     else:
-        for _, r in upcoming.iterrows():
+        next_match = upcoming.iloc[0]
+        days_until = (next_match["datetime"].date() - pd.Timestamp.now(tz="Europe/Copenhagen").date()).days
+        if days_until == 0:
+            next_text = "Næste kamp er i dag"
+        elif days_until == 1:
+            next_text = "Næste kamp er i morgen"
+        elif days_until > 1:
+            next_text = f"Næste kamp er om {days_until} dage"
+        else:
+            next_text = "Næste kamp afventer resultat"
+
+        home_count = int((upcoming["venue"] == "home").sum())
+        away_count = int((upcoming["venue"] == "away").sum())
+        st.caption(f"{len(upcoming)} kampe tilbage · {home_count} hjemme · {away_count} ude · {next_text}")
+
+        weekdays = ["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
+        months = ["januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"]
+
+        for index, r in upcoming.iterrows():
             with st.container(border=True):
-                venue = "Hjemme" if r["venue"] == "home" else "Ude"
-                st.markdown(f"**Runde {r['round']} · {r['opponent']}**  \\n{r['datetime'].strftime('%d/%m/%Y %H:%M')} · {venue} · {r['location'] or '—'}")
+                date_col, match_col, venue_col = st.columns([1.1, 2.4, 1.5], vertical_alignment="center")
+                dt = r["datetime"]
+                date_col.markdown(f"**{weekdays[dt.weekday()].capitalize()}**  \\n{dt.day}. {months[dt.month - 1]} · kl. {dt.strftime('%H:%M')}")
+                marker = "Næste kamp · " if index == 0 else ""
+                match_col.caption(f"{marker}Runde {int(r['round'])}")
+                match_col.markdown(f"### {r['opponent']}")
+                venue = "🏠 Hjemme" if r["venue"] == "home" else "🚐 Ude"
+                venue_col.markdown(f"**{venue}**")
+                venue_col.caption(str(r.get("location") or "Spillested ikke oplyst"))
 
 with tab_availability:
     st.subheader("Tilgængelighed")
     matches = availability.get("matches", [])
     players_df = availability.get("players", pd.DataFrame())
     if not matches:
-        st.info("Kunne ikke hente eller parse tilgængelighedsarket.")
+        st.info(availability.get("reason") or "Kunne ikke hente eller parse tilgængelighedsarket.")
     else:
+        if availability.get("reason"):
+            st.warning(availability["reason"])
         titles = [m["title"] for m in matches]
         selected_title = st.selectbox("Vælg kamp", titles)
         selected_match = next(m for m in matches if m["title"] == selected_title)
         st.metric("Antal der kan", selected_match["available_count"])
         table = selected_match["table"].copy()
-        only_available = st.checkbox("Vis kun spillere der kan spille", value=True)
+        has_answers = bool((table["Kan spille"] == "Ja").any())
+        only_available = st.checkbox("Vis kun spillere der kan spille", value=has_answers)
         if only_available:
             table = table[table["Kan spille"] == "Ja"].copy()
         st.dataframe(table, use_container_width=True, hide_index=True)

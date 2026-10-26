@@ -1,6 +1,7 @@
 import streamlit as st
 
-from padel_pipeline import OUR_TEAM_ID, OUR_POOL_ID, build_dataset
+from app_config import get_active_season, load_config
+from padel_pipeline import build_dataset
 from lineup_optimizer import (
     all_known_players,
     suggest_two_round_lineups,
@@ -9,15 +10,22 @@ from lineup_optimizer import (
 
 st.set_page_config(page_title="Holdforslag", page_icon="🎯", layout="wide")
 
+DATA_CACHE_VERSION = 4
+
 st.title("🎯 Holdforslag")
 st.caption("2 runder · 3 par pr. runde · samme par kun én gang")
 
+active_key, active = get_active_season(load_config())
+team_id = int(active.get("team_id"))
+pool_id = int(active.get("pool_id"))
+
+
 @st.cache_data(ttl=60*15)
-def load_data():
-    return build_dataset(OUR_TEAM_ID, OUR_POOL_ID)
+def load_data(team_id: int, pool_id: int, cache_version: int):
+    return build_dataset(team_id, pool_id)
 
 with st.spinner("Henter data..."):
-    data = load_data()
+    data = load_data(team_id, pool_id, DATA_CACHE_VERSION)
 
 individual = data["individual"]
 lineup = data["lineup"]
@@ -44,7 +52,9 @@ with st.expander("📊 Puljestilling", expanded=True):
         })[["#", "Hold", "Pts", "Sp", "V", "U", "T", "Sæt±", "Games±", "participant_id"]]
 
         def highlight_us(row):
-            if row["participant_id"] == OUR_TEAM_ID:
+            configured_name = str(active.get("team_name", "")).replace(" ", "").replace("-", "").lower()
+            row_name = str(row["Hold"]).replace(" ", "").replace("-", "").lower()
+            if row["participant_id"] == team_id or (configured_name and configured_name in row_name):
                 return ["background-color: rgba(99, 153, 255, 0.18); font-weight: 600;"] * len(row)
             return [""] * len(row)
 

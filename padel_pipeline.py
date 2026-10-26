@@ -38,7 +38,7 @@ RANKEDIN_CACHE_TTL_SECONDS = 60 * 15
 
 AVAILABILITY_SHEET_XLSX_URL = (
     "https://docs.google.com/spreadsheets/d/"
-    "1w-k6XoE_waSmGZt82l9mVPkW2CqkQxus/export?format=xlsx"
+    "1kRFBarOJ3L23tCSefWv8PYyQqe2qDlvJ/export?format=xlsx"
 )
 
 CACHE = Path(__file__).parent / "cache"
@@ -74,14 +74,6 @@ def fetch(url: str, cache_key: str, refresh: bool = False) -> dict | list:
             raise ValueError(f"Ugyldig JSON i cache-filen {cache_file}: {e}") from e
 
     response = SESSION.get(url, timeout=15)
-
-    print("\n--- DEBUG FETCH ---")
-    print("URL:", url)
-    print("Status:", response.status_code)
-    print("Content-Type:", response.headers.get("Content-Type"))
-    print("Første 500 tegn af svar:")
-    print(response.text[:500])
-    print("--- END DEBUG ---\n")
 
     response.raise_for_status()
 
@@ -130,29 +122,50 @@ def url_pool_standings(pool_id: int) -> str:
 # ============================================================
 # Rankedin parsing
 # ============================================================
+_MISSING = object()
+
+
+def _rankedin_get(mapping: dict, pascal_name: str, default=_MISSING):
+    """Read a Rankedin property in either its old or current casing."""
+    camel_name = pascal_name[:1].lower() + pascal_name[1:]
+    if pascal_name in mapping:
+        return mapping[pascal_name]
+    if camel_name in mapping:
+        return mapping[camel_name]
+    if default is not _MISSING:
+        return default
+    available = ", ".join(sorted(map(str, mapping.keys())))
+    raise KeyError(
+        f"Rankedin-svaret mangler '{pascal_name}'/'{camel_name}'. "
+        f"Tilgængelige felter: {available or '(ingen)'}"
+    )
+
+
 def parse_team_matches(raw: dict, our_team_id: int) -> pd.DataFrame:
     rows = []
-    for m in raw["Matches"]:
-        t1, t2 = m["Team1"], m["Team2"]
-        we_are_t1 = t1["Id"] == our_team_id
+    for m in _rankedin_get(raw, "Matches"):
+        t1, t2 = _rankedin_get(m, "Team1"), _rankedin_get(m, "Team2")
+        details = _rankedin_get(m, "Details")
+        we_are_t1 = _rankedin_get(t1, "Id") == our_team_id
         us = t1 if we_are_t1 else t2
         them = t2 if we_are_t1 else t1
+        show_results = _rankedin_get(m, "ShowResults")
 
         rows.append({
-            "team_match_id": m["MatchId"],
-            "round": m["Details"]["Round"],
+            "team_match_id": _rankedin_get(m, "MatchId"),
+            "round": _rankedin_get(details, "Round"),
             "datetime": pd.to_datetime(
-                m["Details"]["Time"],
+                _rankedin_get(details, "Time"),
                 format="%d/%m/%Y %H:%M",
             ),
             "venue": "home" if we_are_t1 else "away",
-            "location": m["Details"].get("LocationName", ""),
-            "opponent": them["Name"],
-            "opponent_id": them["Id"],
-            "played": m["ShowResults"],
-            "our_score": us["Result"] if m["ShowResults"] else None,
-            "their_score": them["Result"] if m["ShowResults"] else None,
-            "won": us["IsWinner"] if m["ShowResults"] else None,
+            "location": _rankedin_get(details, "LocationName", ""),
+            "opponent": _rankedin_get(them, "Name"),
+            "opponent_id": _rankedin_get(them, "Id"),
+            "played": show_results,
+            "our_score": _rankedin_get(us, "Result") if show_results else None,
+            "their_score": _rankedin_get(them, "Result") if show_results else None,
+            "won": _rankedin_get(us, "IsWinner") if show_results else None,
             "we_are_challenger": we_are_t1,
         })
 
@@ -164,50 +177,51 @@ def parse_individual_matches(
     team_match_id: int,
     we_are_challenger: bool,
 ) -> list[dict]:
-    individual = raw[0]["Matches"]["Matches"]
+    matches = _rankedin_get(raw[0], "Matches")
+    individual = _rankedin_get(matches, "Matches")
     rows = []
 
     for sub in individual:
-        ch, cd = sub["Challenger"], sub["Challenged"]
+        ch, cd = _rankedin_get(sub, "Challenger"), _rankedin_get(sub, "Challenged")
 
-        if ch["Player1Id"] == 0 or cd["Player1Id"] == 0:
+        if _rankedin_get(ch, "Player1Id") == 0 or _rankedin_get(cd, "Player1Id") == 0:
             continue
 
-        result = sub["MatchResult"]
-        if not result.get("HasScore"):
+        result = _rankedin_get(sub, "MatchResult")
+        if not _rankedin_get(result, "HasScore", False):
             continue
 
-        score = result["Score"]
-        sets_raw = score.get("DetailedScoring") or []
+        score = _rankedin_get(result, "Score")
+        sets_raw = _rankedin_get(score, "DetailedScoring", []) or []
 
         if we_are_challenger:
             our_side, their_side = ch, cd
-            our_sets_won = score["FirstParticipantScore"]
-            their_sets_won = score["SecondParticipantScore"]
-            we_won = score["IsFirstParticipantWinner"]
-            sets = [(s["FirstParticipantScore"], s["SecondParticipantScore"]) for s in sets_raw]
+            our_sets_won = _rankedin_get(score, "FirstParticipantScore")
+            their_sets_won = _rankedin_get(score, "SecondParticipantScore")
+            we_won = _rankedin_get(score, "IsFirstParticipantWinner")
+            sets = [(_rankedin_get(s, "FirstParticipantScore"), _rankedin_get(s, "SecondParticipantScore")) for s in sets_raw]
         else:
             our_side, their_side = cd, ch
-            our_sets_won = score["SecondParticipantScore"]
-            their_sets_won = score["FirstParticipantScore"]
-            we_won = not score["IsFirstParticipantWinner"]
-            sets = [(s["SecondParticipantScore"], s["FirstParticipantScore"]) for s in sets_raw]
+            our_sets_won = _rankedin_get(score, "SecondParticipantScore")
+            their_sets_won = _rankedin_get(score, "FirstParticipantScore")
+            we_won = not _rankedin_get(score, "IsFirstParticipantWinner")
+            sets = [(_rankedin_get(s, "SecondParticipantScore"), _rankedin_get(s, "FirstParticipantScore")) for s in sets_raw]
 
         games_won = sum(a for a, _ in sets)
         games_lost = sum(b for _, b in sets)
 
         rows.append({
             "team_match_id": team_match_id,
-            "match_id": sub["Id"],
-            "date": pd.to_datetime(sub["Date"]),
-            "our_p1_id": our_side["Player1Id"],
-            "our_p1_name": our_side["Name"],
-            "our_p2_id": our_side["Player2Id"],
-            "our_p2_name": our_side["Player2Name"],
-            "opp_p1_id": their_side["Player1Id"],
-            "opp_p1_name": their_side["Name"],
-            "opp_p2_id": their_side["Player2Id"],
-            "opp_p2_name": their_side["Player2Name"],
+            "match_id": _rankedin_get(sub, "Id"),
+            "date": pd.to_datetime(_rankedin_get(sub, "Date")),
+            "our_p1_id": _rankedin_get(our_side, "Player1Id"),
+            "our_p1_name": _rankedin_get(our_side, "Name"),
+            "our_p2_id": _rankedin_get(our_side, "Player2Id"),
+            "our_p2_name": _rankedin_get(our_side, "Player2Name"),
+            "opp_p1_id": _rankedin_get(their_side, "Player1Id"),
+            "opp_p1_name": _rankedin_get(their_side, "Name"),
+            "opp_p2_id": _rankedin_get(their_side, "Player2Id"),
+            "opp_p2_name": _rankedin_get(their_side, "Player2Name"),
             "sets_won": our_sets_won,
             "sets_lost": their_sets_won,
             "games_won": games_won,
@@ -222,39 +236,44 @@ def parse_individual_matches(
 
 
 def parse_lineup(raw: dict, our_team_id: int) -> pd.DataFrame:
-    ours = raw["FirstTeam"] if raw["FirstTeam"]["Id"] == our_team_id else raw["SecondTeam"]
+    first_team = _rankedin_get(raw, "FirstTeam")
+    ours = first_team if _rankedin_get(first_team, "Id") == our_team_id else _rankedin_get(raw, "SecondTeam")
 
     rows = []
-    for p in ours["Players"]:
-        points = {rt["RankingType"]: rt["Points"] for rt in p.get("RankingTypePoints", [])}
+    for p in _rankedin_get(ours, "Players"):
+        points = {
+            _rankedin_get(rt, "RankingType"): _rankedin_get(rt, "Points")
+            for rt in _rankedin_get(p, "RankingTypePoints", [])
+        }
         rows.append({
-            "player_id": p["PlayerId"],
-            "full_name": f"{p['FirstName']} {p['LastName']}".strip(),
-            "ranked_in_id": p["PlayerRankedinId"],
-            "has_license": p["HasLicense"],
-            "rating_begin": p["RatingBegin"],
+            "player_id": _rankedin_get(p, "PlayerId"),
+            "full_name": f"{_rankedin_get(p, 'FirstName')} {_rankedin_get(p, 'LastName')}".strip(),
+            "ranked_in_id": _rankedin_get(p, "PlayerRankedinId"),
+            "has_license": _rankedin_get(p, "HasLicense"),
+            "rating_begin": _rankedin_get(p, "RatingBegin"),
             "ranking_pts": points.get(3, 0.0),
-            "role": "Captain" if p["TeamParticipantType"] == 3 else "Player",
+            "role": "Captain" if _rankedin_get(p, "TeamParticipantType") == 3 else "Player",
         })
 
-    return pd.DataFrame(rows).sort_values("ranking_pts", ascending=False).reset_index(drop=True)
+    columns = ["player_id", "full_name", "ranked_in_id", "has_license", "rating_begin", "ranking_pts", "role"]
+    return pd.DataFrame(rows, columns=columns).sort_values("ranking_pts", ascending=False).reset_index(drop=True)
 
 
 def parse_standings(raw: dict) -> pd.DataFrame:
     rows = []
-    for t in raw["ScoresViewModels"]:
+    for t in _rankedin_get(raw, "ScoresViewModels"):
         rows.append({
-            "standing": t["Standing"],
-            "participant_id": t["ParticipantId"],
-            "team_name": t["ParticipantName"],
-            "match_points": t["MatchPoints"],
-            "played": t["Played"],
-            "wins": t["Wins"],
-            "draws": t["Draws"],
-            "losses": t["Losses"],
-            "sets_diff": t["GamesDifference"],
-            "games_diff": t["TeamGamesDifference"],
-            "points_diff": t["PointsDifference"],
+            "standing": _rankedin_get(t, "Standing"),
+            "participant_id": _rankedin_get(t, "ParticipantId"),
+            "team_name": _rankedin_get(t, "ParticipantName"),
+            "match_points": _rankedin_get(t, "MatchPoints"),
+            "played": _rankedin_get(t, "Played"),
+            "wins": _rankedin_get(t, "Wins"),
+            "draws": _rankedin_get(t, "Draws"),
+            "losses": _rankedin_get(t, "Losses"),
+            "sets_diff": _rankedin_get(t, "GamesDifference"),
+            "games_diff": _rankedin_get(t, "TeamGamesDifference"),
+            "points_diff": _rankedin_get(t, "PointsDifference"),
         })
 
     return pd.DataFrame(rows).sort_values("standing").reset_index(drop=True)
@@ -278,10 +297,24 @@ def _load_availability_workbook() -> pd.DataFrame:
     return pd.read_excel(io.BytesIO(response.content), sheet_name=0, header=None)
 
 
+def _availability_layout(df: pd.DataFrame) -> tuple[int, int, int, int, int]:
+    """Locate the header and player rows across the season workbook variants."""
+    for row_idx in range(df.shape[0]):
+        if _clean_cell(df.iloc[row_idx, 0]).lower() == "spillere":
+            player_start = row_idx + 2
+            player_end = player_start
+            while player_end < df.shape[0]:
+                name = _clean_cell(df.iloc[player_end, 0])
+                if not name or name.lower().startswith("antal tilmeldte"):
+                    break
+                player_end += 1
+            return row_idx - 1, row_idx, row_idx + 1, player_start, player_end - 1
+    raise ValueError("Kunne ikke finde rækken 'Spillere' i tilgængelighedsarket")
+
+
 def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
     df = df_raw.copy()
-    player_start = 10
-    player_end = 19
+    date_row, time_row, teams_row, player_start, player_end = _availability_layout(df)
 
     players = []
     for r in range(player_start, player_end + 1):
@@ -301,10 +334,11 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
     max_col = df.shape[1]
 
     while col < max_col:
-        date_val = _clean_cell(df.iloc[7, col])
-        time_val = _clean_cell(df.iloc[8, col])
-        home_val = _clean_cell(df.iloc[9, col])
-        away_val = _clean_cell(df.iloc[9, col + 1]) if col + 1 < max_col else ""
+        date_source = df.iloc[date_row, col]
+        date_val = _clean_cell(date_source)
+        time_val = _clean_cell(df.iloc[time_row, col])
+        home_val = _clean_cell(df.iloc[teams_row, col])
+        away_val = _clean_cell(df.iloc[teams_row, col + 1]) if col + 1 < max_col else ""
 
         if date_val or time_val or home_val or away_val:
             rows = []
@@ -312,9 +346,13 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
 
             for p in players:
                 r = p["_row_idx"]
-                can_home = _clean_cell(df.iloc[r, col]).lower() == "x"
-                can_away = _clean_cell(df.iloc[r, col + 1]).lower() == "x" if col + 1 < max_col else False
+                home_answer = _clean_cell(df.iloc[r, col]).lower()
+                away_answer = _clean_cell(df.iloc[r, col + 1]).lower() if col + 1 < max_col else ""
+                can_home = home_answer == "x"
+                can_away = away_answer == "x"
                 can_play = can_home or can_away
+                answered_no = home_answer == "-" or away_answer == "-"
+                status = "Ja" if can_play else "Nej" if answered_no else "Ikke svaret"
 
                 if can_play:
                     available_count += 1
@@ -322,7 +360,7 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
                 rows.append({
                     "Spiller": p["Spiller"],
                     "Side": p["Side"],
-                    "Kan spille": "Ja" if can_play else "Nej",
+                    "Kan spille": status,
                     "PP-12": "x" if can_home else "",
                     away_val if away_val else "Modstander": "x" if can_away else "",
                 })
@@ -333,6 +371,7 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
             matches.append({
                 "title": title,
                 "date": date_val,
+                "date_source": date_source,
                 "time": time_val,
                 "home": home_val,
                 "away": away_val,
@@ -348,10 +387,141 @@ def parse_availability_table(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, list[d
     return player_df, matches
 
 
-def load_availability_data() -> dict:
+def _availability_dates(df_raw: pd.DataFrame) -> list[pd.Timestamp]:
+    """Extract the match dates used by the fixed availability-sheet layout."""
+    dates = []
+    current_year = pd.Timestamp.now().year
+    date_row, _, _, _, _ = _availability_layout(df_raw)
+    for col in range(4, df_raw.shape[1], 2):
+        value = df_raw.iloc[date_row, col]
+        if pd.isna(value) or str(value).strip() == "":
+            continue
+        if isinstance(value, (pd.Timestamp,)) or hasattr(value, "year"):
+            dates.append(pd.Timestamp(value).normalize())
+            continue
+        try:
+            dates.append(pd.to_datetime(f"{str(value).strip()}/{current_year}", format="%d/%m/%Y"))
+        except (TypeError, ValueError):
+            continue
+    return dates
+
+
+def _possible_dates(value, year: int) -> set[pd.Timestamp]:
+    """Return plausible dates, including Excel's occasional day/month swap."""
+    if pd.isna(value) or str(value).strip() == "":
+        return set()
+    if isinstance(value, pd.Timestamp) or hasattr(value, "year"):
+        date = pd.Timestamp(value).normalize()
+        dates = {date}
+        if date.day <= 12 and date.month <= 12 and date.day != date.month:
+            dates.add(pd.Timestamp(year=date.year, month=date.day, day=date.month))
+        return dates
+    try:
+        return {pd.to_datetime(f"{str(value).strip()}/{year}", format="%d/%m/%Y")}
+    except (TypeError, ValueError):
+        return set()
+
+
+def _time_slot_contains(slot: str, match_time) -> bool:
+    import re
+
+    hours = [int(value) for value in re.findall(r"\d+", str(slot))]
+    if len(hours) < 2:
+        return True
+    match_minutes = match_time.hour * 60 + match_time.minute
+    start_minutes = hours[0] * 60
+    end_minutes = hours[1] * 60
+    return start_minutes <= match_minutes < end_minutes
+
+
+def _availability_for_scheduled_matches(
+    possible_matches: list[dict],
+    team_matches: pd.DataFrame,
+    players: pd.DataFrame,
+) -> list[dict]:
+    """Map survey answers onto only the fixtures that Rankedin has scheduled."""
+    scheduled_matches = []
+    upcoming = team_matches[~team_matches["played"]].sort_values("datetime")
+    for _, match in upcoming.iterrows():
+        dt = pd.Timestamp(match["datetime"])
+        candidate = next((
+            item for item in possible_matches
+            if dt.normalize() in _possible_dates(item.get("date_source", item.get("date")), dt.year)
+            and _time_slot_contains(item.get("time", ""), dt)
+        ), None)
+
+        if candidate is not None:
+            table = candidate["table"][["Spiller", "Side", "Kan spille"]].copy()
+        else:
+            table = pd.DataFrame({
+                "Spiller": players["Spiller"],
+                "Side": players["Side"],
+                "Kan spille": "Ikke svaret",
+            })
+
+        opponent = str(match["opponent"])
+        venue = "Hjemme" if match["venue"] == "home" else "Ude"
+        scheduled_matches.append({
+            "title": f"Runde {int(match['round'])} · {dt.strftime('%d/%m/%Y %H:%M')} · {opponent}",
+            "date": dt,
+            "time": dt.strftime("%H:%M"),
+            "home": venue,
+            "away": opponent,
+            "available_count": int((table["Kan spille"] == "Ja").sum()),
+            "table": table,
+        })
+    return scheduled_matches
+
+
+def load_availability_data(team_matches: pd.DataFrame | None = None) -> dict:
     raw = _load_availability_workbook()
     players, matches = parse_availability_table(raw)
-    return {"raw": raw, "players": players, "matches": matches}
+    sheet_dates = _availability_dates(raw)
+
+    if team_matches is not None and not team_matches.empty and sheet_dates:
+        season_dates = pd.to_datetime(team_matches["datetime"]).dt.normalize()
+        matching_dates = sum(
+            any(abs(sheet_date - season_date) <= pd.Timedelta(days=14) for season_date in season_dates)
+            for sheet_date in sheet_dates
+        )
+        required_matches = min(2, len(season_dates))
+        overlaps_season = matching_dates >= required_matches
+        if not overlaps_season:
+            unanswered_matches = []
+            upcoming = team_matches[~team_matches["played"]].sort_values("datetime")
+            for _, match in upcoming.iterrows():
+                opponent = str(match["opponent"])
+                table = pd.DataFrame({
+                    "Spiller": players["Spiller"],
+                    "Side": players["Side"],
+                    "Kan spille": "Ikke svaret",
+                    opponent: "",
+                })
+                venue = "Hjemme" if match["venue"] == "home" else "Ude"
+                unanswered_matches.append({
+                    "title": f"Runde {int(match['round'])} · {match['datetime'].strftime('%d/%m/%Y %H:%M')} · {opponent}",
+                    "date": match["datetime"],
+                    "time": match["datetime"].strftime("%H:%M"),
+                    "home": venue,
+                    "away": opponent,
+                    "available_count": 0,
+                    "table": table,
+                })
+
+            season_players = players[["Spiller", "Side"]].copy()
+            season_players["Ønsket"] = ""
+            season_players["Kampe"] = ""
+            return {
+                "raw": raw,
+                "players": season_players,
+                "matches": unanswered_matches,
+                "reason": "Tilgængelighedsarket er ikke opdateret til den aktive sæson. Kampene vises fra Rankedin, og alle spillere står derfor som 'Ikke svaret'.",
+            }
+
+    if team_matches is not None and not team_matches.empty:
+        matches = _availability_for_scheduled_matches(matches, team_matches, players)
+
+    return {"raw": raw, "players": players, "matches": matches, "reason": ""}
 
 
 # ============================================================
@@ -364,11 +534,14 @@ def build_dataset(
 ) -> dict:
     try:
         raw_tm = fetch(url_team_matches(our_team_id), cache_key=f"team_matches_{our_team_id}", refresh=refresh)
+    except Exception as e:
+        raise RuntimeError(f"Kunne ikke hente holdkampe fra Rankedin. Detalje: {e}") from e
+
+    try:
         team_matches = parse_team_matches(raw_tm, our_team_id)
     except Exception as e:
         raise RuntimeError(
-            "Kunne ikke hente holdkampe fra Rankedin.\n"
-            "URL'en i url_team_matches() matcher sandsynligvis ikke den rigtige request.\n"
+            "Kunne ikke parse holdkampe fra Rankedin; svarformatet er ændret eller ugyldigt.\n"
             f"Detalje: {e}"
         ) from e
 
@@ -382,13 +555,13 @@ def build_dataset(
             raw_det = fetch(url_team_match_details(tm_id), cache_key=f"match_details_{tm_id}", refresh=refresh)
             all_ind.extend(parse_individual_matches(raw_det, tm_id, row["we_are_challenger"]))
         except Exception as e:
-            print(f"⚠ Kunne ikke hente detaljer for kamp {tm_id}: {e}")
+            print(f"ADVARSEL: Kunne ikke hente detaljer for kamp {tm_id}: {e}")
 
         try:
             raw_lu = fetch(url_team_match_lineup(tm_id), cache_key=f"match_lineup_{tm_id}", refresh=refresh)
             latest_lineup = parse_lineup(raw_lu, our_team_id)
         except Exception as e:
-            print(f"⚠ Kunne ikke hente lineup for kamp {tm_id}: {e}")
+            print(f"ADVARSEL: Kunne ikke hente lineup for kamp {tm_id}: {e}")
 
     individual = pd.DataFrame(all_ind)
 
@@ -396,14 +569,14 @@ def build_dataset(
         raw_st = fetch(url_pool_standings(pool_id), cache_key=f"standings_{pool_id}", refresh=refresh)
         standings = parse_standings(raw_st)
     except Exception as e:
-        print(f"⚠ Kunne ikke hente stilling for pulje {pool_id}: {e}")
+        print(f"ADVARSEL: Kunne ikke hente stilling for pulje {pool_id}: {e}")
         standings = pd.DataFrame()
 
     try:
-        availability = load_availability_data()
+        availability = load_availability_data(team_matches)
     except Exception as e:
-        print(f"⚠ Kunne ikke hente availability: {e}")
-        availability = {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": []}
+        print(f"ADVARSEL: Kunne ikke hente availability: {e}")
+        availability = {"raw": pd.DataFrame(), "players": pd.DataFrame(), "matches": [], "reason": str(e)}
 
     return {
         "team_matches": team_matches,
@@ -474,6 +647,10 @@ def stat_per_match(team_matches: pd.DataFrame, individual: pd.DataFrame) -> pd.D
 # CLI
 # ============================================================
 if __name__ == "__main__":
+    import sys
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     data = build_dataset(refresh=True)
     print("=" * 70)
     print("HOLDKAMPE")

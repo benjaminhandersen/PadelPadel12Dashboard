@@ -1,0 +1,21 @@
+{
+  "firstTeam": {
+    "id": 3280686,
+    "name": "PadelPadel 12 -",
+    "teamUrl": "/en/team/homepage/3280686",
+    "canLineupTeam": false,
+    "isWinner": false,
+    "players": []
+  },
+  "secondTeam": {
+    "id": 3280728,
+    "name": "PadelPadel 9 - Padel...",
+    "teamUrl": "/en/team/homepage/3280728",
+    "canLineupTeam": false,
+    "isWinner": true,
+    "players": []
+  },
+  "isLicenseRequired": true,
+  "isAdmin": false,
+  "hasRating": true
+}

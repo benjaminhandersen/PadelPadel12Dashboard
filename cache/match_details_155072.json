@@ -1,0 +1,541 @@
+[
+  {
+    "settings": {
+      "matchType": 3,
+      "matchesCount": 7,
+      "matchOrder": 1
+    },
+    "matches": {
+      "matches": [
+        {
+          "id": 6888809,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Ulrik Jensen",
+            "player2Name": "Henrik Knudsen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 631685,
+            "player2Id": 2302263,
+            "player1Url": "/en/player/R000175142/ulrik-jensen",
+            "player2Url": "/en/player/R000305575/henrik-knudsen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Patrick Antoft-Olsen",
+            "player2Name": "Kasper Elsborg",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 1803343,
+            "player2Id": 731437,
+            "player1Url": "/en/player/R000272754/patrick-antoft-olsen",
+            "player2Url": "/en/player/R000186385/kasper-elsborg",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 0,
+              "secondParticipantScore": 2,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 2,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 2,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": false,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": false,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888810,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Steffen Larsen",
+            "player2Name": "Ken Faistrup",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 418376,
+            "player2Id": 631684,
+            "player1Url": "/en/player/R000152537/steffen-larsen",
+            "player2Url": "/en/player/R000175141/ken-faistrup",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Kasper Iversen",
+            "player2Name": "Simon Norlén",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 951979,
+            "player2Id": 731548,
+            "player1Url": "/en/player/R000205109/kasper-iversen",
+            "player2Url": "/en/player/R000186396/simon-norlen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 0,
+              "secondParticipantScore": 2,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 4,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 2,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": false,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": false,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888811,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Henrik Olsen",
+            "player2Name": "Frederik Pogel Jensen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 2302273,
+            "player2Id": 2302564,
+            "player1Url": "/en/player/R000305582/henrik-olsen",
+            "player2Url": "/en/player/R000305597/frederik-pogel-jensen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Simon Fischer Olesen",
+            "player2Name": "Jesper Carlsen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 1803342,
+            "player2Id": 1525096,
+            "player1Url": "/en/player/R000272751/simon-fischer-olesen",
+            "player2Url": "/en/player/R000254658/jesper-carlsen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 1,
+              "secondParticipantScore": 2,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 1,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 6,
+                  "secondParticipantScore": 4,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": true,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 2,
+                  "secondParticipantScore": 10,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": false,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": false,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888812,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Ken Faistrup",
+            "player2Name": "Ulrik Jensen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 631684,
+            "player2Id": 631685,
+            "player1Url": "/en/player/R000175141/ken-faistrup",
+            "player2Url": "/en/player/R000175142/ulrik-jensen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Kasper Elsborg",
+            "player2Name": "Simon Norlén",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 731437,
+            "player2Id": 731548,
+            "player1Url": "/en/player/R000186385/kasper-elsborg",
+            "player2Url": "/en/player/R000186396/simon-norlen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 2,
+              "secondParticipantScore": 0,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 7,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": true,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 6,
+                  "secondParticipantScore": 2,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": true,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": true,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": true,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888813,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Henrik Knudsen",
+            "player2Name": "Henrik Olsen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 2302263,
+            "player2Id": 2302273,
+            "player1Url": "/en/player/R000305575/henrik-knudsen",
+            "player2Url": "/en/player/R000305582/henrik-olsen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Jesper Carlsen",
+            "player2Name": "Patrick Antoft-Olsen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 1525096,
+            "player2Id": 1803343,
+            "player1Url": "/en/player/R000254658/jesper-carlsen",
+            "player2Url": "/en/player/R000272754/patrick-antoft-olsen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 0,
+              "secondParticipantScore": 2,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 4,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 3,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": false,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": false,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888814,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Steffen Larsen",
+            "player2Name": "Frederik Pogel Jensen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 418376,
+            "player2Id": 2302564,
+            "player1Url": "/en/player/R000152537/steffen-larsen",
+            "player2Url": "/en/player/R000305597/frederik-pogel-jensen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "challenged": {
+            "name": "Kasper Iversen",
+            "player2Name": "Simon Fischer Olesen",
+            "countryShort": "dk",
+            "player2CountryShort": "dk",
+            "player1Id": 951979,
+            "player2Id": 1803342,
+            "player1Url": "/en/player/R000205109/kasper-iversen",
+            "player2Url": "/en/player/R000272751/simon-fischer-olesen",
+            "player1RatingBegin": 19.32,
+            "player2RatingBegin": 19.32,
+            "ratingPower": 19.32
+          },
+          "matchResult": {
+            "score": {
+              "firstParticipantScore": 0,
+              "secondParticipantScore": 2,
+              "loserTiebreak": null,
+              "detailedScoring": [
+                {
+                  "firstParticipantScore": 4,
+                  "secondParticipantScore": 6,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                },
+                {
+                  "firstParticipantScore": 6,
+                  "secondParticipantScore": 7,
+                  "loserTiebreak": null,
+                  "detailedScoring": null,
+                  "isFirstParticipantWinner": false,
+                  "labelClass": null
+                }
+              ],
+              "isFirstParticipantWinner": false,
+              "labelClass": null
+            },
+            "totalDurationInMinutes": null,
+            "cancellationStatus": null,
+            "isFirstParticipantWinner": false,
+            "hasScore": true,
+            "hasCancellation": false,
+            "hasDetailedScore": true,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": true,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": null,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        },
+        {
+          "id": 6888815,
+          "date": "2026-09-30T18:00:00",
+          "challenger": {
+            "name": "Pending ",
+            "player2Name": "Pending ",
+            "countryShort": "rin",
+            "player2CountryShort": "rin",
+            "player1Id": 0,
+            "player2Id": 0,
+            "player1Url": "",
+            "player2Url": "",
+            "player1RatingBegin": null,
+            "player2RatingBegin": null,
+            "ratingPower": 0
+          },
+          "challenged": {
+            "name": "Pending ",
+            "player2Name": "Pending ",
+            "countryShort": "rin",
+            "player2CountryShort": "rin",
+            "player1Id": 0,
+            "player2Id": 0,
+            "player1Url": "",
+            "player2Url": "",
+            "player1RatingBegin": null,
+            "player2RatingBegin": null,
+            "ratingPower": 0
+          },
+          "matchResult": {
+            "score": null,
+            "totalDurationInMinutes": null,
+            "cancellationStatus": "Not Played",
+            "isFirstParticipantWinner": false,
+            "hasScore": false,
+            "hasCancellation": true,
+            "hasDetailedScore": false,
+            "isPlayed": true
+          },
+          "state": 6,
+          "showDate": false,
+          "showThreeDots": false,
+          "showResult": true,
+          "awaitingAcceptDate": false,
+          "acceptDateButton": false,
+          "setDateButton": false,
+          "editChallengeButton": false,
+          "isMatchScheduled": true,
+          "enterResultsButton": false,
+          "cancellation": 5,
+          "isTeamMatchInPlay": false,
+          "rankingType": 3
+        }
+      ],
+      "eventId": 956,
+      "eventType": 3,
+      "currentPlayerId": 0,
+      "eventInitiatorId": 18840,
+      "isEventFinished": false
+    }
+  }
+]
